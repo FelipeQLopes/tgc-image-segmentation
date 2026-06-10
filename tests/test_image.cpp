@@ -1,5 +1,5 @@
 // test_image.cpp — testes basicos para o modulo Image
-// Compilar: g++ -Wall -Wextra -Iinclude src/Image.cpp tests/test_image.cpp -o build/test_image -lm
+// Compilar: g++ -std=c++17 -Wall -Wextra -Iinclude src/Image.cpp tests/test_image.cpp -o build/test_image -lm
 
 #include "image.hpp"
 

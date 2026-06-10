@@ -1,6 +1,6 @@
 // test_graph.cpp — testes para o modulo Graph (ImageGraph)
 // Compilar:
-//   g++ -Wall -Wextra -Iinclude src/Image.cpp src/Graph.cpp tests/test_graph.cpp -o build/test_graph -lm
+//   g++ -std=c++17 -Wall -Wextra -Iinclude src/Image.cpp src/Graph.cpp tests/test_graph.cpp -o build/test_graph -lm
 
 #include "Graph.hpp"
 #include "image.hpp"

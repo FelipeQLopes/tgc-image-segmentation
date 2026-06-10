@@ -10,7 +10,7 @@ TESTDIR = tests
 
 # Compilador e Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -I$(INCDIR)
+CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INCDIR)
 
 # Encontra todos os arquivos .cpp na pasta src
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
