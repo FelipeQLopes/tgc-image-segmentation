@@ -1,6 +1,7 @@
 TARGET = build/main
 TEST_TARGET = build/test_image
 TEST_GRAPH_TARGET = build/test_graph
+TEST_DS_TARGET = build/test_disjoint_set
 
 # Diretorios
 SRCDIR = src
@@ -38,13 +39,19 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_image test_graph
+test: test_ds test_image test_graph
+
+test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
+	./$(TEST_DS_TARGET)
 
 test_image: $(BUILDDIR) $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 test_graph: $(BUILDDIR) $(TEST_GRAPH_TARGET)
 	./$(TEST_GRAPH_TARGET)
+
+$(TEST_DS_TARGET): $(TESTDIR)/test_disjoint_set.cpp $(SRCDIR)/DisjointSet.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(TESTDIR)/test_disjoint_set.cpp -o $@ -lm
 
 $(TEST_TARGET): $(TESTDIR)/test_image.cpp $(SRCDIR)/Image.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(TESTDIR)/test_image.cpp -o $@ -lm
@@ -56,4 +63,4 @@ $(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gr
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: all run clean test test_image test_graph
+.PHONY: all run clean test test_ds test_image test_graph
