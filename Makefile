@@ -2,6 +2,7 @@ TARGET = build/main
 TEST_TARGET = build/test_image
 TEST_GRAPH_TARGET = build/test_graph
 TEST_DS_TARGET = build/test_disjoint_set
+TEST_PQ_TARGET = build/test_priority_queue
 
 # Diretorios
 SRCDIR = src
@@ -39,7 +40,7 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_ds test_image test_graph
+test: test_ds test_image test_graph test_pq
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
 	./$(TEST_DS_TARGET)
@@ -59,8 +60,14 @@ $(TEST_TARGET): $(TESTDIR)/test_image.cpp $(SRCDIR)/Image.cpp
 $(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(TESTDIR)/test_graph.cpp -o $@ -lm
 
+test_pq: $(BUILDDIR) $(TEST_PQ_TARGET)
+	./$(TEST_PQ_TARGET)
+
+$(TEST_PQ_TARGET): $(TESTDIR)/teste_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/teste_priority_queue.cpp -o $@
+
 # Limpa
 clean:
 	rm -rf $(BUILDDIR)
 
-.PHONY: all run clean test test_ds test_image test_graph
+.PHONY: all run clean test test_ds test_image test_graph test_pq
