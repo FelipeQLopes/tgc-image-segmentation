@@ -1,13 +1,19 @@
 #include "Cousty.hpp"
 #include "image.hpp"
 
-#include <filesystem>
+#include <cerrno>
+#include <cstring>
+#include <dirent.h>
 #include <iostream>
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 
+#ifdef _WIN32
+#include <direct.h>
+#endif
+
 using namespace std;
-namespace fs = std::filesystem;
 
 // Diretorios onde buscar imagens
 static const vector<string> IMAGE_DIRS = {
@@ -30,24 +36,49 @@ static bool is_image_extension(const string& ext) {
     return false;
 }
 
-/**
- * @brief Busca imagens nos diretorios conhecidos.
- * @return Vetor de caminhos relativos das imagens encontradas.
- */
+static bool file_exists(const string& path) {
+    struct stat info;
+    return stat(path.c_str(), &info) == 0;
+}
+
+static bool is_directory(const string& path) {
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) return false;
+    return (info.st_mode & S_IFDIR) != 0;
+}
+
+static vector<string> list_files_in_dir(const string& dir) {
+    vector<string> files;
+    DIR* dp = opendir(dir.c_str());
+    if (!dp) return files;
+
+    struct dirent* entry;
+    while ((entry = readdir(dp)) != nullptr) {
+        if (entry->d_type == DT_REG || entry->d_type == DT_UNKNOWN) {
+            files.emplace_back(entry->d_name);
+        }
+    }
+    closedir(dp);
+    return files;
+}
+
 static vector<string> find_available_images() {
     vector<string> images;
 
     for (const auto& dir : IMAGE_DIRS) {
-        if (!fs::exists(dir) || !fs::is_directory(dir)) {
+        if (!is_directory(dir)) {
             continue;
         }
-        for (const auto& entry : fs::directory_iterator(dir)) {
-            if (entry.is_regular_file()) {
-                string ext = entry.path().extension().string();
-                // Converter para lowercase
+
+        vector<string> names = list_files_in_dir(dir);
+        for (const auto& name : names) {
+            string ext;
+            size_t pos = name.find_last_of('.');
+            if (pos != string::npos) {
+                ext = name.substr(pos);
                 for (auto& c : ext) c = static_cast<char>(tolower(c));
                 if (is_image_extension(ext)) {
-                    images.push_back(entry.path().string());
+                    images.push_back(dir + "/" + name);
                 }
             }
         }
@@ -255,8 +286,12 @@ int main() {
 
     // --- 5. Salvar resultados ---
     string out_dir = "results";
-    if (!fs::exists(out_dir)) {
-        fs::create_directory(out_dir);
+    if (!is_directory(out_dir)) {
+#ifdef _WIN32
+        _mkdir(out_dir.c_str());
+#else
+        mkdir(out_dir.c_str(), 0755);
+#endif
     }
 
     string seg_path = out_dir + "/" + output_prefix + "_segmentation.png";

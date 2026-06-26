@@ -94,7 +94,8 @@ public:
 
 private:
     int num_leaves_; // numero de nos folha (pixels)
-    
+    std::vector<Edge> mst_edges_; // arestas da MST usadas para o corte por limiar
+
     // Tabelas para Binary Lifting LCA
     std::vector<int> depth;
     std::vector<std::vector<int>> up;

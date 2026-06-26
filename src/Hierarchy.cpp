@@ -2,8 +2,41 @@
 #include "../include/DisjointSet.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <unordered_set>
 #include <vector>
+
+namespace {
+double effective_lambda_for_mst(const std::vector<Edge>& mst_edges,
+                                 double lambda) {
+    if (mst_edges.empty()) {
+        return lambda;
+    }
+
+    double min_weight = std::numeric_limits<double>::infinity();
+    double max_weight = 0.0;
+    double sum_weight = 0.0;
+
+    for (const Edge& edge : mst_edges) {
+        min_weight = std::min(min_weight, edge.weight);
+        max_weight = std::max(max_weight, edge.weight);
+        sum_weight += edge.weight;
+    }
+
+    if (max_weight <= 0.0) {
+        return 0.0;
+    }
+
+    // Se o lambda informado for claramente maior que a escala observada
+    // da MST, interpretamos como um percentual da escala da árvore.
+    if (lambda > max_weight) {
+        double range = max_weight - min_weight;
+        return min_weight + (lambda / 100.0) * range;
+    }
+
+    return lambda;
+}
+} // namespace
 
 // =========================================================================
 // HierarchicalSegmentation
@@ -30,6 +63,8 @@ void HierarchicalSegmentation::build_from_mst(std::vector<Edge> mst_edges,
                                                int num_vertices) {
     num_leaves_ = num_vertices;
     int n = num_vertices;
+    mst_edges_ = std::move(mst_edges);
+    std::sort(mst_edges_.begin(), mst_edges_.end());
 
     // A BPT tera n folhas + (n-1) nos internos = 2n-1 nos no total
     nodes.clear();
@@ -47,10 +82,7 @@ void HierarchicalSegmentation::build_from_mst(std::vector<Edge> mst_edges,
         nodes.push_back(leaf);
     }
 
-    // Passo 2: Ordenar arestas por peso crescente
-    std::sort(mst_edges.begin(), mst_edges.end());
-
-    // Passo 3: Inicializar DisjointSet
+    // Passo 2: Inicializar DisjointSet
     DisjointSet dsu(n);
 
     // Passo 4: Mapeamento representante -> id do no na hierarquia
@@ -63,7 +95,7 @@ void HierarchicalSegmentation::build_from_mst(std::vector<Edge> mst_edges,
     int next_id = n;
 
     // Passo 5: Processar cada aresta da MST
-    for (const Edge& edge : mst_edges) {
+    for (const Edge& edge : mst_edges_) {
         int cu = dsu.find(edge.u);
         int cv = dsu.find(edge.v);
 
@@ -138,36 +170,20 @@ void HierarchicalSegmentation::build_from_mst(std::vector<Edge> mst_edges,
 std::vector<int> HierarchicalSegmentation::cut_at_level(double lambda) const {
     std::vector<int> labels(static_cast<size_t>(num_leaves_), -1);
 
-    if (root < 0) {
+    if (num_leaves_ <= 0) {
         return labels;
     }
 
-    int total_nodes = static_cast<int>(nodes.size());
-    std::vector<int> segment_of(total_nodes, -1);
-    
-    // A raiz recebe o seu proprio id como segmento inicial
-    segment_of[root] = root;
-
-    // Propagar os labels de cima para baixo
-    for (int i = total_nodes - 1; i >= num_leaves_; --i) {
-        if (segment_of[i] == -1) continue;
-
-        const HierarchyNode& node = nodes[i];
-        
-        if (node.merge_level <= lambda) {
-            // Merge aceito: a subarvore inteira recebe o mesmo label
-            segment_of[node.left_child] = segment_of[i];
-            segment_of[node.right_child] = segment_of[i];
-        } else {
-            // Merge rejeitado (corte): cada filho vira a raiz de um novo segmento
-            segment_of[node.left_child] = node.left_child;
-            segment_of[node.right_child] = node.right_child;
+    const double effective_lambda = effective_lambda_for_mst(mst_edges_, lambda);
+    DisjointSet dsu(num_leaves_);
+    for (const Edge& edge : mst_edges_) {
+        if (edge.weight <= effective_lambda) {
+            dsu.unite(edge.u, edge.v);
         }
     }
 
-    // Atribuir as folhas aos seus respectivos segmentos
     for (int i = 0; i < num_leaves_; ++i) {
-        labels[i] = segment_of[i] != -1 ? segment_of[i] : i;
+        labels[i] = dsu.find(i);
     }
 
     return labels;
@@ -185,21 +201,19 @@ std::vector<int> HierarchicalSegmentation::cut_at_level(double lambda) const {
  * @return Numero de segmentos.
  */
 int HierarchicalSegmentation::num_segments_at_level(double lambda) const {
-    if (root < 0) {
+    if (num_leaves_ <= 0) {
         return 0;
     }
-    
-    int merges_aceitos = 0;
-    int total_nodes = static_cast<int>(nodes.size());
-    
-    // Contar apenas os nos internos (ids de num_leaves_ ate total_nodes - 1)
-    for (int i = num_leaves_; i < total_nodes; ++i) {
-        if (nodes[i].merge_level <= lambda) {
-            merges_aceitos++;
+
+    const double effective_lambda = effective_lambda_for_mst(mst_edges_, lambda);
+    DisjointSet dsu(num_leaves_);
+    for (const Edge& edge : mst_edges_) {
+        if (edge.weight <= effective_lambda) {
+            dsu.unite(edge.u, edge.v);
         }
     }
-    
-    return num_leaves_ - merges_aceitos;
+
+    return dsu.num_components();
 }
 
 /**

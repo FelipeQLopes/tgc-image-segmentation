@@ -5,7 +5,9 @@
 #include "../include/SaliencyMap.hpp"
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
+#include <limits>
 #include <set>
 
 using namespace std;
@@ -39,6 +41,20 @@ SegmentationResult cousty_segment(const Image& image,
 
     // 2. Calcular MST com Kruskal
     MSTResult mst = kruskal_mst(graph.num_vertices, graph.edges);
+
+    double min_mst_weight = std::numeric_limits<double>::infinity();
+    double max_mst_weight = 0.0;
+    double sum_mst_weight = 0.0;
+    for (const Edge& edge : mst.mst_edges) {
+        min_mst_weight = std::min(min_mst_weight, edge.weight);
+        max_mst_weight = std::max(max_mst_weight, edge.weight);
+        sum_mst_weight += edge.weight;
+    }
+
+    std::cout << "[Cousty] MST weights: min=" << std::fixed << std::setprecision(3)
+              << min_mst_weight << ", max=" << max_mst_weight
+              << ", avg=" << (mst.mst_edges.empty() ? 0.0 : sum_mst_weight / mst.mst_edges.size())
+              << std::defaultfloat << std::endl;
 
     // 3. Construir hierarquia (BPT) a partir da MST
     HierarchicalSegmentation hierarchy;

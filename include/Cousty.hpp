@@ -15,7 +15,7 @@ struct CoustyParams {
     bool   compute_saliency; // se deve gerar saliency map (default: true)
 
     CoustyParams()
-        : lambda(30.0), connectivity(8), compute_saliency(true) {}
+        : lambda(8.0), connectivity(8), compute_saliency(true) {}
 };
 
 /**

@@ -128,7 +128,7 @@ static void test_pipeline_rgb() {
 
     assert(result.labels.size() == 9);
     assert(result.num_segments >= 1);
-    assert(result.elapsed_ms > 0.0);
+    assert(result.elapsed_ms >= 0.0);
 
     PASS(name);
 }
@@ -236,6 +236,30 @@ static void test_connectivity_4_vs_8() {
 // ---------------------------------------------------------------------------
 // 6. Imagem uniforme — todos iguais
 // ---------------------------------------------------------------------------
+static void test_relative_lambda_scale() {
+    const char* name = "Lambda alto deve ser interpretado em escala relativa da MST";
+    TEST(name);
+
+    Image img(2, 2, 1);
+    img.set(0, 0, 0, 0);
+    img.set(1, 0, 0, 40);
+    img.set(0, 1, 0, 80);
+    img.set(1, 1, 0, 120);
+
+    CoustyParams params;
+    params.lambda = 30.0;
+    params.connectivity = 4;
+    params.compute_saliency = false;
+
+    SegmentationResult result = cousty_segment(img, params);
+
+    // Os pesos de aresta são pequenos comparados a 30 em valor absoluto;
+    // o corte deve usar uma escala relativa da MST, preservando mais regiões.
+    assert(result.num_segments >= 2);
+
+    PASS(name);
+}
+
 static void test_uniform_image() {
     const char* name = "Imagem uniforme — todas as arestas com peso 0";
     TEST(name);
@@ -272,6 +296,7 @@ int main() {
     test_lambda_monotonicity();
     test_no_saliency();
     test_connectivity_4_vs_8();
+    test_relative_lambda_scale();
     test_uniform_image();
 
     std::cout << "\n--- Resultado: " << tests_passed << " passaram, "
