@@ -1,2 +1,4 @@
 build
 .DS_Store
+output/02_gradient.png
+output/03_minima_colored.png
