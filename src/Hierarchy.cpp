@@ -2,41 +2,8 @@
 #include "../include/DisjointSet.hpp"
 
 #include <algorithm>
-#include <limits>
-#include <unordered_set>
 #include <vector>
 
-namespace {
-double effective_lambda_for_mst(const std::vector<Edge>& mst_edges,
-                                 double lambda) {
-    if (mst_edges.empty()) {
-        return lambda;
-    }
-
-    double min_weight = std::numeric_limits<double>::infinity();
-    double max_weight = 0.0;
-    double sum_weight = 0.0;
-
-    for (const Edge& edge : mst_edges) {
-        min_weight = std::min(min_weight, edge.weight);
-        max_weight = std::max(max_weight, edge.weight);
-        sum_weight += edge.weight;
-    }
-
-    if (max_weight <= 0.0) {
-        return 0.0;
-    }
-
-    // Se o lambda informado for claramente maior que a escala observada
-    // da MST, interpretamos como um percentual da escala da árvore.
-    if (lambda > max_weight) {
-        double range = max_weight - min_weight;
-        return min_weight + (lambda / 100.0) * range;
-    }
-
-    return lambda;
-}
-} // namespace
 
 // =========================================================================
 // HierarchicalSegmentation
@@ -174,10 +141,9 @@ std::vector<int> HierarchicalSegmentation::cut_at_level(double lambda) const {
         return labels;
     }
 
-    const double effective_lambda = effective_lambda_for_mst(mst_edges_, lambda);
     DisjointSet dsu(num_leaves_);
     for (const Edge& edge : mst_edges_) {
-        if (edge.weight <= effective_lambda) {
+        if (edge.weight <= lambda) {
             dsu.unite(edge.u, edge.v);
         }
     }
@@ -205,10 +171,9 @@ int HierarchicalSegmentation::num_segments_at_level(double lambda) const {
         return 0;
     }
 
-    const double effective_lambda = effective_lambda_for_mst(mst_edges_, lambda);
     DisjointSet dsu(num_leaves_);
     for (const Edge& edge : mst_edges_) {
-        if (edge.weight <= effective_lambda) {
+        if (edge.weight <= lambda) {
             dsu.unite(edge.u, edge.v);
         }
     }

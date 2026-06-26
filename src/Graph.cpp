@@ -1,6 +1,7 @@
 #include "Graph.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdlib>
 
@@ -181,11 +182,12 @@ double ImageGraph::compute_weight(const Image& image,
                     static_cast<double>(image.at(x2, y2, 1));
         double db = static_cast<double>(image.at(x1, y1, 2)) -
                     static_cast<double>(image.at(x2, y2, 2));
-        double diff = std::sqrt(dr * dr + dg * dg + db * db);
+        double color_dist = std::sqrt(dr * dr + dg * dg + db * db);
         double grad = std::max(compute_rgb_gradient(image, x1, y1),
                                compute_rgb_gradient(image, x2, y2));
-        double color_term = std::sqrt((dr * dr) + (dg * dg) + (db * db));
-        double edge_term = std::max(0.0, color_term - 20.0);
-        return std::min(255.0, edge_term + 1.3 * grad + 0.4 * color_term);
+        
+        // Usa a mesma escala da versao em tons de cinza (1.8 e 0.7)
+        // para que o limiar lambda funcione da mesma forma para imagens coloridas.
+        return std::min(255.0, color_dist * 1.8 + 0.7 * grad);
     }
 }

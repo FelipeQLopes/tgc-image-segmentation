@@ -1,10 +1,13 @@
 #include "Cousty.hpp"
 #include "image.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
 #include <dirent.h>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <vector>
@@ -26,6 +29,11 @@ static const vector<string> IMAGE_EXTS = {
     ".png", ".jpg", ".jpeg", ".pgm", ".ppm", ".bmp"
 };
 
+// Lambdas usados no modo sweep ("todas as opcoes")
+static const vector<double> SWEEP_LAMBDAS = {
+    5.0, 10.0, 20.0, 30.0, 50.0, 75.0, 100.0, 150.0, 200.0
+};
+
 /**
  * @brief Verifica se uma extensao e de imagem suportada.
  */
@@ -36,10 +44,6 @@ static bool is_image_extension(const string& ext) {
     return false;
 }
 
-static bool file_exists(const string& path) {
-    struct stat info;
-    return stat(path.c_str(), &info) == 0;
-}
 
 static bool is_directory(const string& path) {
     struct stat info;
@@ -54,7 +58,10 @@ static vector<string> list_files_in_dir(const string& dir) {
 
     struct dirent* entry;
     while ((entry = readdir(dp)) != nullptr) {
-        if (entry->d_type == DT_REG || entry->d_type == DT_UNKNOWN) {
+        // d_type nao e confiavel no MinGW; usamos stat para verificar
+        // se e um arquivo regular (nao um diretorio).
+        string full_path = dir + "/" + entry->d_name;
+        if (!is_directory(full_path)) {
             files.emplace_back(entry->d_name);
         }
     }
@@ -144,7 +151,7 @@ static string select_image() {
 
 /**
  * @brief Menu de configuracao do lambda.
- * @return Valor de lambda escolhido.
+ * @return Valor de lambda escolhido, ou -1.0 para o modo sweep (todas as opcoes).
  */
 static double select_lambda() {
     cout << "\n--- Nivel de Corte (Lambda) ---\n" << endl;
@@ -153,6 +160,7 @@ static double select_lambda() {
     cout << "  3. Lambda = 50.0  (poucos segmentos)" << endl;
     cout << "  4. Lambda = 100.0 (muito poucos segmentos)" << endl;
     cout << "  5. Digitar valor personalizado" << endl;
+    cout << "  6. Gerar todas as opcoes de lambda (sweep)" << endl;
     cout << "\nEscolha uma opcao [2]: ";
 
     string line;
@@ -169,6 +177,7 @@ static double select_lambda() {
         cin.ignore();
         return val;
     }
+    if (line == "6") return -1.0; // sentinel para sweep
 
     // Tentar interpretar como numero direto
     try {
@@ -236,6 +245,50 @@ static string select_output_prefix() {
     return line;
 }
 
+/**
+ * @brief Garante que o diretorio de saida existe.
+ */
+static void ensure_output_dir(const string& out_dir) {
+    if (!is_directory(out_dir)) {
+#ifdef _WIN32
+        _mkdir(out_dir.c_str());
+#else
+        mkdir(out_dir.c_str(), 0755);
+#endif
+    }
+}
+
+/**
+ * @brief Executa o pipeline para um unico lambda e salva os resultados.
+ * @return O SegmentationResult produzido.
+ */
+static SegmentationResult run_single(
+        const Image&  image,
+        CoustyParams  params,
+        const string& seg_path,
+        const string& sal_path) {
+
+    SegmentationResult result = cousty_segment(image, params);
+
+    try {
+        save_image(seg_path, result.segmentation_image);
+        cout << "  Segmentacao salva em: " << seg_path << endl;
+    } catch (const exception& e) {
+        cerr << "  Erro ao salvar segmentacao: " << e.what() << endl;
+    }
+
+    if (params.compute_saliency && !sal_path.empty()) {
+        try {
+            save_image(sal_path, result.saliency_image);
+            cout << "  Saliency map salvo em: " << sal_path << endl;
+        } catch (const exception& e) {
+            cerr << "  Erro ao salvar saliency map: " << e.what() << endl;
+        }
+    }
+
+    return result;
+}
+
 int main() {
     print_banner();
 
@@ -251,22 +304,33 @@ int main() {
 
     // --- 2. Configurar parametros ---
     CoustyParams params;
-    params.lambda           = select_lambda();
+    double lambda_choice    = select_lambda();
     params.connectivity     = select_connectivity();
     params.compute_saliency = select_saliency();
     string output_prefix    = select_output_prefix();
 
+    bool sweep_mode = (lambda_choice < 0.0);
+
     // --- Resumo da configuracao ---
     cout << "\n--- Configuracao ---" << endl;
     cout << "  Imagem:         " << input_path << endl;
-    cout << "  Lambda:         " << params.lambda << endl;
+    if (sweep_mode) {
+        cout << "  Modo:           Sweep de lambda (";
+        for (size_t i = 0; i < SWEEP_LAMBDAS.size(); ++i) {
+            if (i) cout << ", ";
+            cout << SWEEP_LAMBDAS[i];
+        }
+        cout << ")" << endl;
+    } else {
+        cout << "  Lambda:         " << lambda_choice << endl;
+    }
     cout << "  Conectividade:  " << params.connectivity << endl;
     cout << "  Saliency map:   " << (params.compute_saliency ? "sim" : "nao") << endl;
     cout << "  Prefixo saida:  " << output_prefix << endl;
     cout << "\nPressione ENTER para iniciar ou Ctrl+C para cancelar...";
     cin.get();
 
-    // --- 3. Carregar imagem ---
+    // --- 3. Carregar imagem (uma unica vez) ---
     cout << "\nCarregando imagem: " << input_path << endl;
 
     Image image;
@@ -280,41 +344,76 @@ int main() {
     cout << "Imagem carregada: " << image.width << " x " << image.height
          << " (" << image.channels << " canais)" << endl;
 
-    // --- 4. Executar pipeline ---
-    cout << "\nExecutando segmentacao..." << endl;
-    SegmentationResult result = cousty_segment(image, params);
-
-    // --- 5. Salvar resultados ---
     string out_dir = "results";
-    if (!is_directory(out_dir)) {
-#ifdef _WIN32
-        _mkdir(out_dir.c_str());
-#else
-        mkdir(out_dir.c_str(), 0755);
-#endif
-    }
+    ensure_output_dir(out_dir);
 
-    string seg_path = out_dir + "/" + output_prefix + "_segmentation.png";
-    try {
-        save_image(seg_path, result.segmentation_image);
-        cout << "Segmentacao salva em: " << seg_path << endl;
-    } catch (const exception& e) {
-        cerr << "Erro ao salvar segmentacao: " << e.what() << endl;
-        return 1;
-    }
+    // --- 4. Executar pipeline ---
+    if (sweep_mode) {
+        // Modo sweep: roda para cada lambda predefinido
+        cout << "\n=== Modo Sweep: gerando " << SWEEP_LAMBDAS.size()
+             << " segmentacoes ===\n" << endl;
 
-    if (params.compute_saliency) {
-        string sal_path = out_dir + "/" + output_prefix + "_saliency.png";
-        try {
-            save_image(sal_path, result.saliency_image);
-            cout << "Saliency map salvo em: " << sal_path << endl;
-        } catch (const exception& e) {
-            cerr << "Erro ao salvar saliency map: " << e.what() << endl;
-            return 1;
+        // Cabecalho da tabela de resultados
+        cout << left
+             << setw(10) << "Lambda"
+             << setw(12) << "Segmentos"
+             << setw(12) << "Tempo(ms)"
+             << "Arquivo"
+             << endl;
+        cout << string(60, '-') << endl;
+
+        for (double lam : SWEEP_LAMBDAS) {
+            params.lambda = lam;
+
+            // Formatar sufixo do lambda (sem ponto para nomes de arquivo)
+            string lam_tag;
+            if (lam == static_cast<double>(static_cast<int>(lam))) {
+                lam_tag = to_string(static_cast<int>(lam));
+            } else {
+                // Manter uma casa decimal
+                ostringstream oss;
+                oss << fixed << setprecision(1) << lam;
+                lam_tag = oss.str();
+                // Substituir '.' por 'p'
+                replace(lam_tag.begin(), lam_tag.end(), '.', 'p');
+            }
+
+            string seg_path = out_dir + "/" + output_prefix
+                              + "_lambda" + lam_tag + "_segmentation.png";
+            string sal_path = params.compute_saliency
+                              ? (out_dir + "/" + output_prefix
+                                 + "_lambda" + lam_tag + "_saliency.png")
+                              : "";
+
+            cout << "\n[Lambda = " << lam << "]" << endl;
+            SegmentationResult res = run_single(image, params, seg_path, sal_path);
+
+            cout << left
+                 << setw(10) << lam
+                 << setw(12) << res.num_segments
+                 << setw(12) << fixed << setprecision(1) << res.elapsed_ms
+                 << seg_path
+                 << defaultfloat << endl;
         }
+
+        cout << "\n=== Sweep concluido! " << SWEEP_LAMBDAS.size()
+             << " segmentacoes salvas na pasta '" << out_dir << "'. ===" << endl;
+
+    } else {
+        // Modo normal: um unico lambda
+        params.lambda = lambda_choice;
+
+        string seg_path = out_dir + "/" + output_prefix + "_segmentation.png";
+        string sal_path = params.compute_saliency
+                          ? (out_dir + "/" + output_prefix + "_saliency.png")
+                          : "";
+
+        cout << "\nExecutando segmentacao..." << endl;
+        run_single(image, params, seg_path, sal_path);
+
+        cout << "\nConcluido com sucesso!" << endl;
+        cout << "As imagens geradas foram salvas na pasta '" << out_dir << "'." << endl;
     }
 
-    cout << "\nConcluido com sucesso!" << endl;
-    cout << "As imagens geradas foram salvas na pasta '" << out_dir << "'." << endl;
     return 0;
 }
