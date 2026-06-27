@@ -5,6 +5,7 @@ TEST_DS_TARGET = build/test_disjoint_set
 TEST_KRUSKAL_TARGET = build/test_kruskal
 TEST_PQ_TARGET = build/test_priority_queue
 TEST_GRADIENT_TARGET = build/test_gradient
+TEST_IFT_TARGET = build/test_ift
 TEST_HIERARCHY_TARGET = build/test_hierarchy
 TEST_COUSTY_TARGET = build/test_cousty
 
@@ -18,8 +19,8 @@ TESTDIR = tests
 CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INCDIR)
 
-# Encontra todos os arquivos .cpp na pasta src
-SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+# Encontra todos os arquivos .cpp na pasta src, exceto o demo visual
+SOURCES = $(filter-out $(SRCDIR)/demo_gradient.cpp,$(wildcard $(SRCDIR)/*.cpp))
 
 # Define os arquivos de objeto (.o) correspondentes dentro da pasta build
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
@@ -44,7 +45,7 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_ds test_image test_graph test_kruskal test_pq test_gradient test_hierarchy test_cousty
+test: test_ds test_image test_graph test_kruskal test_pq test_gradient test_ift test_hierarchy test_cousty
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
 	./$(TEST_DS_TARGET)
@@ -88,6 +89,12 @@ test_gradient: $(BUILDDIR) $(TEST_GRADIENT_TARGET)
 $(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Gradient.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@
 
+test_ift: $(BUILDDIR) $(TEST_IFT_TARGET)
+	./$(TEST_IFT_TARGET)
+
+$(TEST_IFT_TARGET): $(TESTDIR)/test_ift.cpp $(SRCDIR)/IFT.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/Image.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/IFT.cpp $(TESTDIR)/test_ift.cpp -o $@ -lm
+
 # Demo visual do gradiente e minimos regionais
 demo: $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/demo_gradient.cpp -o $(BUILDDIR)/demo_gradient -lm
@@ -102,4 +109,4 @@ $(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/
 clean:
 	rm -rf $(BUILDDIR) output/*.png
 
-.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient demo
+.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient test_ift demo
