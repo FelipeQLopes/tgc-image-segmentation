@@ -3,14 +3,13 @@ Projeto desenvolvido para a disciplina de Teoria de Grafos e Computabilidade, co
 
 
 ## Integrantes:
-- Arthur Camargo
-- Daniel Matos
-- Davi Bernardes
-- Felipe Costa
-- Felipe Quites
-- Leonardo Amaral
-- Matheus de Almeida
-- Nayron Campos
+- Arthur de Sá Camargo
+- Daniel Matos Marques
+- Davi Manoel Bernardes
+- Felipe Costa Unsonst
+- Felipe Quites Lopes
+- Leonardo Amaral Passos Figueiredo
+- Matheus de Almeida Moreira
 
 ## Como Compilar e Executar
 
