@@ -5,6 +5,8 @@ TEST_DS_TARGET = build/test_disjoint_set
 TEST_KRUSKAL_TARGET = build/test_kruskal
 TEST_PQ_TARGET = build/test_priority_queue
 TEST_GRADIENT_TARGET = build/test_gradient
+TEST_HIERARCHY_TARGET = build/test_hierarchy
+TEST_COUSTY_TARGET = build/test_cousty
 
 # Diretorios
 SRCDIR = src
@@ -42,7 +44,7 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_ds test_image test_graph test_kruskal test_pq test_gradient
+test: test_ds test_image test_graph test_kruskal test_pq test_gradient test_hierarchy test_cousty
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
 	./$(TEST_DS_TARGET)
@@ -58,6 +60,12 @@ test_kruskal: $(BUILDDIR) $(TEST_KRUSKAL_TARGET)
 
 test_pq: $(BUILDDIR) $(TEST_PQ_TARGET)
 	./$(TEST_PQ_TARGET)
+
+test_hierarchy: $(BUILDDIR) $(TEST_HIERARCHY_TARGET)
+	./$(TEST_HIERARCHY_TARGET)
+
+test_cousty: $(BUILDDIR) $(TEST_COUSTY_TARGET)
+	./$(TEST_COUSTY_TARGET)
 
 $(TEST_DS_TARGET): $(TESTDIR)/test_disjoint_set.cpp $(SRCDIR)/DisjointSet.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(TESTDIR)/test_disjoint_set.cpp -o $@ -lm
@@ -84,9 +92,14 @@ $(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Gradient.cpp
 demo: $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/demo_gradient.cpp -o $(BUILDDIR)/demo_gradient -lm
 	./$(BUILDDIR)/demo_gradient
+$(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
+
+$(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp $(TESTDIR)/test_cousty.cpp -o $@ -lm
 
 # Limpa
 clean:
 	rm -rf $(BUILDDIR) output/*.png
 
-.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_gradient demo
+.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient demo
