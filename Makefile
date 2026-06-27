@@ -4,6 +4,7 @@ TEST_GRAPH_TARGET = build/test_graph
 TEST_DS_TARGET = build/test_disjoint_set
 TEST_KRUSKAL_TARGET = build/test_kruskal
 TEST_PQ_TARGET = build/test_priority_queue
+TEST_GRADIENT_TARGET = build/test_gradient
 TEST_HIERARCHY_TARGET = build/test_hierarchy
 TEST_COUSTY_TARGET = build/test_cousty
 
@@ -43,7 +44,7 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty
+test: test_ds test_image test_graph test_kruskal test_pq test_gradient test_hierarchy test_cousty
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
 	./$(TEST_DS_TARGET)
@@ -81,6 +82,16 @@ $(TEST_KRUSKAL_TARGET): $(TESTDIR)/test_kruskal.cpp $(SRCDIR)/DisjointSet.cpp $(
 $(TEST_PQ_TARGET): $(TESTDIR)/teste_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/teste_priority_queue.cpp -o $@
 
+test_gradient: $(BUILDDIR) $(TEST_GRADIENT_TARGET)
+	./$(TEST_GRADIENT_TARGET)
+
+$(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Gradient.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@
+
+# Demo visual do gradiente e minimos regionais
+demo: $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/demo_gradient.cpp -o $(BUILDDIR)/demo_gradient -lm
+	./$(BUILDDIR)/demo_gradient
 $(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
 
@@ -89,6 +100,6 @@ $(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/
 
 # Limpa
 clean:
-	rm -rf $(BUILDDIR)
+	rm -rf $(BUILDDIR) output/*.png
 
-.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty
+.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient demo
