@@ -1,28 +1,43 @@
 # Guia de Testes e Estado da Implementação
 
-Este diretório contém a suíte de testes unitários do projeto de **Segmentação de Imagens Baseada em Grafos**. Este documento serve como um guia técnico para entender o estado atual do desenvolvimento, a estrutura de cada módulo implementado e o detalhamento dos testes que garantem a corretude física e matemática dos algoritmos.
+Este diretório contém a suíte de testes unitários do projeto de **Segmentação de Imagens Baseada em Grafos** (Algoritmo de Cousty). Este documento serve como um guia técnico para entender o estado atual do desenvolvimento, a estrutura de cada módulo implementado e o detalhamento dos testes que garantem a corretude física e matemática dos algoritmos.
 
 ---
 
 ## Estado Atual do Projeto (Módulos Implementados)
 
-Até o momento, a infraestrutura básica e a base matemática para os algoritmos de segmentação foram concluídas. O projeto está estruturado nos seguintes componentes:
+O pipeline completo de segmentação hierárquica foi implementado. O projeto está estruturado nos seguintes componentes:
 
 ```
 tgc-image-segmentation/
 ├── include/
-│   ├── image.hpp       # Representação e I/O de Imagens (stb)
-│   ├── Edge.hpp        # Estrutura de Aresta Ponderada
-│   ├── Graph.hpp       # Conversão de Imagem para Grafo
-│   └── DisjointSet.hpp # DSU (Union-Find) com Otimizações
+│   ├── image.hpp           # Representação e I/O de Imagens (stb)
+│   ├── Edge.hpp            # Estrutura de Aresta Ponderada
+│   ├── Graph.hpp           # Conversão de Imagem para Grafo
+│   ├── DisjointSet.hpp     # DSU (Union-Find) com Otimizações
+│   ├── Kruskal.hpp         # Algoritmo de Kruskal (MST)
+│   ├── PriorityQueue.hpp   # Fila de Prioridade Mínima (lazy)
+│   ├── Hierarchy.hpp       # Árvore Binária de Partições (BPT)
+│   ├── SaliencyMap.hpp     # Mapa de Saliência baseado na BPT
+│   └── Cousty.hpp          # Pipeline completo de segmentação
 ├── src/
-│   ├── Image.cpp       # Implementação de I/O e manipulação
-│   ├── Graph.cpp       # Implementação do Grafo de Imagem
-│   └── DisjointSet.cpp # Implementação das operações do DSU
+│   ├── Image.cpp           # Implementação de I/O e manipulação
+│   ├── Graph.cpp           # Implementação do Grafo de Imagem
+│   ├── DisjointSet.cpp     # Implementação das operações do DSU
+│   ├── Kruskal.cpp         # Implementação da MST por Kruskal
+│   ├── PriorityQueue.cpp   # Implementação da fila de prioridade
+│   ├── Hierarchy.cpp       # Implementação da BPT e cortes
+│   ├── SaliencyMap.cpp     # Implementação do mapa de saliência
+│   ├── Cousty.cpp          # Orquestração do pipeline completo
+│   └── main.cpp            # Ponto de entrada da aplicação
 └── tests/
-    ├── test_image.cpp  # Testes unitários do módulo Image
-    ├── test_graph.cpp  # Testes unitários do módulo Graph
-    └── test_disjoint_set.cpp # Testes unitários do módulo DSU
+    ├── test_image.cpp           # Testes unitários do módulo Image
+    ├── test_graph.cpp           # Testes unitários do módulo Graph
+    ├── test_disjoint_set.cpp    # Testes unitários do módulo DSU
+    ├── test_kruskal.cpp         # Testes unitários do módulo Kruskal
+    ├── teste_priority_queue.cpp # Testes unitários da PriorityQueue
+    ├── test_hierarchy.cpp       # Testes unitários da Hierarchy (BPT)
+    └── test_cousty.cpp          # Testes de integração do pipeline Cousty
 ```
 
 ---
@@ -76,6 +91,50 @@ Valida a lógica matemática de fusão e busca de componentes conexas de maneira
 
 ---
 
+### 4. Módulo Kruskal (`tests/test_kruskal.cpp`)
+Valida a construção da Árvore Geradora Mínima (MST) pelo algoritmo de Kruskal.
+
+*   **Grafo Linear sem Ciclos:** Garante que todas as arestas de um grafo sem ciclos são incluídas na MST e que o peso total é calculado corretamente.
+*   **Grafo Cíclico Triangular:** Valida que a aresta de maior peso é corretamente rejeitada em um grafo com ciclo, resultando em exatamente $N-1$ arestas na MST.
+*   **Grade 3×3 Simulando Imagem:** Testa um grafo de 9 vértices com arestas horizontais e verticais (similar a uma imagem real), verificando que a MST contém exatamente 8 arestas e o peso total calculado manualmente é reproduzido.
+
+---
+
+### 5. Módulo PriorityQueue (`tests/teste_priority_queue.cpp`)
+Valida a fila de prioridade mínima com estratégia *lazy deletion*.
+
+*   **Fila vazia na criação:** Verifica que uma fila recém-criada reporta `empty() == true`.
+*   **`decrease_key` e ordem de extração:** Insere 4 nós com custos distintos via `decrease_key` e valida que `pop()` os retorna em ordem crescente de custo.
+*   **Lazy `decrease_key` ignora entradas obsoletas:** Após diminuir a chave de um nó duas vezes, confirma que apenas a entrada mais recente (menor custo) é retornada pelo `pop()`, e que entradas obsoletas são descartadas silenciosamente.
+*   **Exceção em nó inválido:** Garante que `decrease_key` lança `std::out_of_range` ao receber um índice de nó fora dos limites da fila.
+
+---
+
+### 6. Módulo Hierarchy / BPT (`tests/test_hierarchy.cpp`)
+Valida a construção da Árvore Binária de Partições (BPT) a partir da MST e as operações de corte hierárquico.
+
+*   **Estrutura da BPT — Grafo Linear de 3 Vértices:** Verifica a estrutura completa do dendrograma: número total de nós ($2N-1$), identificação correta da raiz, distinção entre nós folha e internos, e valores exatos de `merge_level` e `size` em cada nó interno.
+*   **`cut_at_level(0)` — Máxima Granularidade:** Garante que um corte com $\lambda = 0$ retorna cada pixel como um segmento individual, produzindo $N$ labels únicos.
+*   **`cut_at_level(+\infty)` — Mínima Granularidade:** Garante que um corte com $\lambda$ muito alto funde todos os pixels em um único segmento.
+*   **Monotonia dos Cortes:** Para uma sequência de $\lambda$s crescentes, valida que o número de segmentos é estritamente não-crescente. Verifica valores exatos de `num_segments_at_level` nos limiares de merge.
+*   **Grade 2×2 — Hierarquia Completa:** Testa a hierarquia completa de uma grade 2×2 com pesos conhecidos, verificando os nós internos e validando os cortes em $\lambda = 0$ (3 segmentos) e $\lambda = 5$ (1 segmento).
+*   **LCA — Menor Ancestral Comum:** Valida o método `lca(u, v)` para todos os pares de folhas em um grafo linear, incluindo o caso `lca(u, u) == u`.
+*   **Contagem de Nós Internos para $n$ Folhas:** Para $n \in [2, 10]$, verifica que a BPT tem exatamente $2n-1$ nós totais e $n-1$ nós internos.
+
+---
+
+### 7. Pipeline Cousty (`tests/test_cousty.cpp`)
+Valida o pipeline de segmentação ponta a ponta integrando todos os módulos anteriores.
+
+*   **Pipeline com Imagem Cinza 4×4:** Executa o pipeline completo (grafo → MST → BPT → corte) em uma imagem sintética com gradiente. Verifica o número de labels, a existência de pelo menos 1 segmento, o tempo de execução positivo, e as dimensões corretas das imagens de saída (segmentação RGB e mapa de saliência grayscale).
+*   **Pipeline com Imagem RGB 3×3 Bicolor:** Executa o pipeline com conectividade 8 em uma imagem com duas regiões de cores distintas (vermelho e azul), validando a integridade básica do resultado.
+*   **Monotonia do Parâmetro $\lambda$:** Com a mesma imagem, executa o pipeline com $\lambda = 0$, $\lambda = 30$ e $\lambda = 10^6$, verificando que o número de segmentos é monótono não-crescente. Valida os casos extremos: $\lambda = 0 \Rightarrow 16$ segmentos (um por pixel) e $\lambda = 10^6 \Rightarrow 1$ segmento.
+*   **Mapa de Saliência Opcional:** Verifica que, ao desativar `compute_saliency`, a imagem de saliência retornada tem dimensões nulas (largura e altura iguais a 0), enquanto a segmentação continua funcionando normalmente.
+*   **Conectividade 4 vs. 8:** Executa o pipeline nas duas modalidades de vizinhança com o mesmo $\lambda$ e verifica que ambos produzem resultados válidos (dimensões corretas e pelo menos 1 segmento).
+*   **Imagem Uniforme:** Em uma imagem 3×3 com todos os pixels de mesmo valor (pesos de arestas todos iguais a 0), verifica que com $\lambda = 0$ todos os pixels são fundidos em um único segmento.
+
+---
+
 ## Como Compilar e Rodar os Testes
 
 Todos os testes são compilados através do compilador padrão `g++` suportando C++17. A execução é facilitada via comandos do `Makefile`.
@@ -90,12 +149,24 @@ make test
 Caso queira compilar e rodar apenas o contexto de validação de um módulo em desenvolvimento:
 
 ```bash
-# Apenas Módulo Image
+# Módulo Image
 make test_image
 
-# Apenas Módulo Graph
+# Módulo Graph
 make test_graph
 
-# Apenas Módulo DisjointSet
+# Módulo DisjointSet
 make test_ds
+
+# Módulo Kruskal
+make test_kruskal
+
+# Módulo PriorityQueue
+make test_pq
+
+# Módulo Hierarchy (BPT)
+make test_hierarchy
+
+# Pipeline Cousty (integração)
+make test_cousty
 ```
