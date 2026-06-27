@@ -15,7 +15,7 @@ TESTDIR = tests
 
 # Compilador e Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INCDIR)
+CXXFLAGS = -Wall -Wextra -std=c++17 -g -O0 -I$(INCDIR)
 
 # Encontra todos os arquivos .cpp na pasta src
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
@@ -43,6 +43,7 @@ run: all
 	./$(TARGET)
 
 # Testes
+
 test: test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
@@ -90,5 +91,6 @@ $(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/
 # Limpa
 clean:
 	rm -rf $(BUILDDIR)
+
 
 .PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty

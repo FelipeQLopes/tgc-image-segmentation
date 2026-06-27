@@ -1,5 +1,3 @@
 build
 .DS_Store
 results
-output/02_gradient.png
-output/03_minima_colored.png

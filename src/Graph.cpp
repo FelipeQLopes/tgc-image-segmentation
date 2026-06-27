@@ -11,24 +11,31 @@ int clamp_to_pixel_range(int value, int min_value, int max_value) {
     return std::max(min_value, std::min(max_value, value));
 }
 
-double compute_gray_gradient(const Image& image, int x, int y) {
-    const int center = image.at(x, y, 0);
+double compute_gray_gradient(const Image& image, int x, int y){
+    int center = image.at(x, y, 0);
 
-    int left = center;
+    int left  = center;
     int right = center;
-    int up = center;
-    int down = center;
+    int up    = center;
+    int down  = center;
 
-    if (x > 0) left = image.at(x - 1, y, 0);
-    if (x + 1 < image.width) right = image.at(x + 1, y, 0);
-    if (y > 0) up = image.at(x, y - 1, 0);
-    if (y + 1 < image.height) down = image.at(x, y + 1, 0);
+    if (x > 0)
+        left = image.at(x - 1, y, 0);
+
+    if (x + 1 < image.width)
+        right = image.at(x + 1, y, 0);
+
+    if (y > 0)
+        up = image.at(x, y - 1, 0);
+
+    if (y + 1 < image.height)
+        down = image.at(x, y + 1, 0);
 
     return std::max({
-        std::abs(static_cast<double>(center) - static_cast<double>(left)),
-        std::abs(static_cast<double>(center) - static_cast<double>(right)),
-        std::abs(static_cast<double>(center) - static_cast<double>(up)),
-        std::abs(static_cast<double>(center) - static_cast<double>(down))
+        std::abs(center-left),
+        std::abs(center-right),
+        std::abs(center-up),
+        std::abs(center-down)
     });
 }
 
