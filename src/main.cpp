@@ -1,8 +1,8 @@
-#include "Cousty.hpp"
-#include "image.hpp"
-#include "AlgorithmType.hpp"
-#include "IFT.hpp"
-#include "Felzenszwalb.hpp"
+#include "algorithms/Cousty.hpp"
+#include "core/Image.hpp"
+#include "core/AlgorithmType.hpp"
+#include "algorithms/IFT.hpp"
+#include "algorithms/Felzenszwalb.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -104,7 +104,7 @@ static vector<string> find_available_images() {
 static void print_banner() {
     cout << "\n"
          << "========================================================\n"
-         << "   Segmentacao Hierarquica de Cousty - Pipeline Completo\n"
+         << "   Pipeline de Segmentacao de Imagens\n"
          << "========================================================\n"
          << endl;
 }
@@ -154,28 +154,60 @@ static string select_image() {
 }
 
 /**
+ * @brief Verifica se o algoritmo utiliza o parametro lambda/corte.
+ */
+static bool algorithm_uses_lambda(AlgorithmType algo) {
+    switch (algo) {
+        case AlgorithmType::COUSTY:
+        case AlgorithmType::FELZENSZWALB:
+            return true;
+        case AlgorithmType::IFT_GRADIENT:
+            return false;
+    }
+    return false;
+}
+
+/**
  * @brief Menu de configuracao do lambda.
  * @return Valor de lambda escolhido, ou -1.0 para o modo sweep (todas as opcoes).
  */
-static double select_lambda() {
-    cout << "\n--- Nivel de Corte (Lambda) ---\n" << endl;
-    cout << "  1. Lambda = 10.0  (muitos segmentos)" << endl;
-    cout << "  2. Lambda = 30.0  (moderado - padrao)" << endl;
-    cout << "  3. Lambda = 50.0  (poucos segmentos)" << endl;
-    cout << "  4. Lambda = 100.0 (muito poucos segmentos)" << endl;
-    cout << "  5. Digitar valor personalizado" << endl;
-    cout << "  6. Gerar todas as opcoes de lambda (sweep)" << endl;
-    cout << "\nEscolha uma opcao [2]: ";
+static double select_lambda(AlgorithmType algo) {
+    if (algo == AlgorithmType::FELZENSZWALB) {
+        cout << "\n--- Parametro de Escala (k) ---\n" << endl;
+        cout << "  1. k = 100.0  (muitos segmentos)" << endl;
+        cout << "  2. k = 300.0  (moderado - padrao)" << endl;
+        cout << "  3. k = 500.0  (poucos segmentos)" << endl;
+        cout << "  4. k = 1000.0 (muito poucos segmentos)" << endl;
+        cout << "  5. Digitar valor personalizado" << endl;
+        cout << "  6. Gerar todas as opcoes de k (sweep)" << endl;
+        cout << "\nEscolha uma opcao [2]: ";
+    } else {
+        cout << "\n--- Nivel de Corte (Lambda) ---\n" << endl;
+        cout << "  1. Lambda = 10.0  (muitos segmentos)" << endl;
+        cout << "  2. Lambda = 30.0  (moderado - padrao)" << endl;
+        cout << "  3. Lambda = 50.0  (poucos segmentos)" << endl;
+        cout << "  4. Lambda = 100.0 (muito poucos segmentos)" << endl;
+        cout << "  5. Digitar valor personalizado" << endl;
+        cout << "  6. Gerar todas as opcoes de lambda (sweep)" << endl;
+        cout << "\nEscolha uma opcao [2]: ";
+    }
 
     string line;
     getline(cin, line);
 
-    if (line.empty() || line == "2") return 30.0;
-    if (line == "1") return 10.0;
-    if (line == "3") return 50.0;
-    if (line == "4") return 100.0;
+    if (algo == AlgorithmType::FELZENSZWALB) {
+        if (line.empty() || line == "2") return 300.0;
+        if (line == "1") return 100.0;
+        if (line == "3") return 500.0;
+        if (line == "4") return 1000.0;
+    } else {
+        if (line.empty() || line == "2") return 30.0;
+        if (line == "1") return 10.0;
+        if (line == "3") return 50.0;
+        if (line == "4") return 100.0;
+    }
     if (line == "5") {
-        cout << "Digite o valor de lambda: ";
+        cout << "Digite o valor: ";
         double val;
         cin >> val;
         cin.ignore();
@@ -212,34 +244,20 @@ static int select_connectivity() {
     return 8;
 }
 
-/**
- * @brief Menu de configuracao do saliency map.
- * @return true se deve gerar saliency map.
- */
-static bool select_saliency() {
-    cout << "\n--- Saliency Map ---\n" << endl;
-    cout << "  1. Sim, gerar saliency map (padrao)" << endl;
-    cout << "  2. Nao gerar" << endl;
-    cout << "\nEscolha uma opcao [1]: ";
-
-    string line;
-    getline(cin, line);
-
-    if (line.empty() || line == "1") return true;
-    if (line == "2") return false;
-
-    cout << "Opcao invalida, usando padrao (sim)." << endl;
-    return true;
-}
 
 /**
  * @brief Menu de configuracao do prefixo de saida.
  * @return Prefixo para arquivos de saida.
  */
-static string select_output_prefix() {
+static string select_output_prefix(bool supports_saliency) {
     cout << "\n--- Prefixo de Saida ---\n" << endl;
-    cout << "Os arquivos serao salvos na pasta 'results' como:\n"
-         << "results/<prefixo>_segmentation.png e results/<prefixo>_saliency.png.\n" << endl;
+    if (supports_saliency) {
+        cout << "Os arquivos serao salvos na pasta 'results' como:\n"
+             << "results/<prefixo>_segmentation.png e results/<prefixo>_saliency.png.\n" << endl;
+    } else {
+        cout << "Os arquivos serao salvos na pasta 'results' como:\n"
+             << "results/<prefixo>_segmentation.png.\n" << endl;
+    }
     cout << "Digite o prefixo [output]: ";
 
     string line;
@@ -323,6 +341,31 @@ static AlgorithmType select_algorithm() {
     return AlgorithmType::COUSTY;
 }
 
+/**
+ * @brief Verifica se o algoritmo suporta geracao de saliency map.
+ * Cousty e Felzenszwalb produzem hierarquias, logo suportam saliency.
+ * IFT nao gera hierarquia, logo nao suporta.
+ */
+static bool algorithm_supports_saliency(AlgorithmType algo) {
+    switch (algo) {
+        case AlgorithmType::COUSTY:
+        case AlgorithmType::FELZENSZWALB:
+            return true;
+        case AlgorithmType::IFT_GRADIENT:
+            return false;
+    }
+    return false;
+}
+
+static std::string algorithm_name(AlgorithmType algo) {
+    switch (algo) {
+        case AlgorithmType::COUSTY:        return "Cousty";
+        case AlgorithmType::IFT_GRADIENT:  return "IFT";
+        case AlgorithmType::FELZENSZWALB:  return "Felzenszwalb";
+    }
+    return "Desconhecido";
+}
+
 SegmentationResult run_algorithm(
     AlgorithmType type,
     const Image& image,
@@ -343,7 +386,7 @@ SegmentationResult run_algorithm(
 
         case AlgorithmType::FELZENSZWALB: {
             FelzenszwalbParams params_fz;
-            params_fz.k = 300.0;
+            params_fz.k = params.lambda;
             params_fz.min_size = 50;
             params_fz.connectivity = params.connectivity;
             params_fz.sigma = 0.5;
@@ -375,29 +418,48 @@ int main() {
     // --- 2. Configurar parametros ---
     CoustyParams params;
     AlgorithmType algo      = select_algorithm();
-    double lambda_choice    = select_lambda();
-    params.connectivity     = select_connectivity();
-    params.compute_saliency = select_saliency();
-    string output_prefix    = select_output_prefix();
-    
 
-    bool sweep_mode = (lambda_choice < 0.0);
+    // Lambda/k so e relevante para Cousty e Felzenszwalb
+    bool uses_lambda = algorithm_uses_lambda(algo);
+    double lambda_choice = 0.0;
+    if (uses_lambda) {
+        lambda_choice = select_lambda(algo);
+    }
+
+    params.connectivity     = select_connectivity();
+
+    // Saliency map e determinado automaticamente pelo algoritmo
+    bool supports_saliency  = algorithm_supports_saliency(algo);
+    params.compute_saliency = supports_saliency;
+
+    string output_prefix    = select_output_prefix(supports_saliency);
+
+    bool sweep_mode = uses_lambda && (lambda_choice < 0.0);
 
     // --- Resumo da configuracao ---
     cout << "\n--- Configuracao ---" << endl;
+    cout << "  Algoritmo:      " << algorithm_name(algo) << endl;
     cout << "  Imagem:         " << input_path << endl;
-    if (sweep_mode) {
-        cout << "  Modo:           Sweep de lambda (";
-        for (size_t i = 0; i < SWEEP_LAMBDAS.size(); ++i) {
-            if (i) cout << ", ";
-            cout << SWEEP_LAMBDAS[i];
+    if (uses_lambda) {
+        string param_name = (algo == AlgorithmType::FELZENSZWALB) ? "k" : "Lambda";
+        if (sweep_mode) {
+            cout << "  Modo:           Sweep de " << param_name << " (";
+            for (size_t i = 0; i < SWEEP_LAMBDAS.size(); ++i) {
+                if (i) cout << ", ";
+                cout << SWEEP_LAMBDAS[i];
+            }
+            cout << ")" << endl;
+        } else {
+            cout << "  " << param_name << ":" << string(14 - param_name.size(), ' ')
+                 << lambda_choice << endl;
         }
-        cout << ")" << endl;
-    } else {
-        cout << "  Lambda:         " << lambda_choice << endl;
     }
     cout << "  Conectividade:  " << params.connectivity << endl;
-    cout << "  Saliency map:   " << (params.compute_saliency ? "sim" : "nao") << endl;
+    if (supports_saliency) {
+        cout << "  Saliency map:   sim (automatico)" << endl;
+    } else {
+        cout << "  Saliency map:   nao (nao suportado por " << algorithm_name(algo) << ")" << endl;
+    }
     cout << "  Prefixo saida:  " << output_prefix << endl;
     cout << "\nPressione ENTER para iniciar ou Ctrl+C para cancelar...";
     cin.get();

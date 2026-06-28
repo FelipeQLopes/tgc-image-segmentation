@@ -1,9 +1,9 @@
 #ifndef SALIENCY_MAP_HPP
 #define SALIENCY_MAP_HPP
 
-#include "Graph.hpp"
-#include "Hierarchy.hpp"
-#include "image.hpp"
+#include "graph/Graph.hpp"
+#include "hierarchy/Hierarchy.hpp"
+#include "core/Image.hpp"
 
 /**
  * @brief Gera o mapa de saliencia a partir da hierarquia e do grafo original.

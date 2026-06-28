@@ -1,4 +1,4 @@
-#include "Felzenszwalb.hpp"
+#include "algorithms/Felzenszwalb.hpp"
 
 #include <cassert>
 #include <iostream>

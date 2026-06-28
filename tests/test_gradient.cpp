@@ -1,6 +1,6 @@
-#include "Gradient.hpp"
+#include "image_processing/Gradient.hpp"
 
-#include "image.hpp"
+#include "core/Image.hpp"
 
 #include <cassert>
 #include <iostream>

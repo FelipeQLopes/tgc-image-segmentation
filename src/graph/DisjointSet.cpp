@@ -1,4 +1,4 @@
-#include "../include/DisjointSet.hpp"
+#include "graph/DisjointSet.hpp"
 
 DisjointSet::DisjointSet(int n) : parent(n), rank(n, 0), size(n, 1), count(n) {
   for (int i = 0; i < n; ++i) {

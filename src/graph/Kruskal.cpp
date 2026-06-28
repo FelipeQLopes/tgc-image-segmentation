@@ -1,5 +1,5 @@
-#include "../include/Kruskal.hpp"
-#include "../include/DisjointSet.hpp"
+#include "graph/Kruskal.hpp"
+#include "graph/DisjointSet.hpp"
 #include <algorithm>
 
 MSTResult kruskal_mst(int num_vertices, std::vector<Edge> edges) {

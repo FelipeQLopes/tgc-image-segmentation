@@ -3,8 +3,8 @@
 //   g++ -std=c++17 -Wall -Wextra -Iinclude src/DisjointSet.cpp src/Kruskal.cpp
 //   src/Hierarchy.cpp tests/test_hierarchy.cpp -o build/test_hierarchy
 
-#include "../include/Hierarchy.hpp"
-#include "../include/Kruskal.hpp"
+#include "hierarchy/Hierarchy.hpp"
+#include "graph/Kruskal.hpp"
 #include <cassert>
 #include <cmath>
 #include <iostream>

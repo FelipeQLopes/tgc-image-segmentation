@@ -1,8 +1,8 @@
-#include "../include/Cousty.hpp"
-#include "../include/Graph.hpp"
-#include "../include/Hierarchy.hpp"
-#include "../include/Kruskal.hpp"
-#include "../include/SaliencyMap.hpp"
+#include "algorithms/Cousty.hpp"
+#include "graph/Graph.hpp"
+#include "hierarchy/Hierarchy.hpp"
+#include "graph/Kruskal.hpp"
+#include "hierarchy/SaliencyMap.hpp"
 
 #include <chrono>
 #include <iomanip>

@@ -1,5 +1,5 @@
-#include "MarkerGeneration.hpp"
-#include "Gradient.hpp"
+#include "image_processing/MarkerGeneration.hpp"
+#include "image_processing/Gradient.hpp"
 
 std::vector<int> generate_markers(
     const Image& image,

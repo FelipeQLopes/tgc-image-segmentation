@@ -1,6 +1,6 @@
-#include "IFT.hpp"
+#include "algorithms/IFT.hpp"
 
-#include "image.hpp"
+#include "core/Image.hpp"
 
 #include <cassert>
 #include <filesystem>

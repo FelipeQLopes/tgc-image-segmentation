@@ -1,8 +1,8 @@
 #ifndef MARKER_GENERATION_HPP
 #define MARKER_GENERATION_HPP
 
-#include "image.hpp"
-#include "Gradient.hpp"
+#include "core/Image.hpp"
+#include "image_processing/Gradient.hpp"
 #include <vector>
 
 struct MarkerParams {

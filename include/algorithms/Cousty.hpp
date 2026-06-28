@@ -1,8 +1,8 @@
 #ifndef COUSTY_HPP
 #define COUSTY_HPP
 
-#include "image.hpp"
-#include "SegmentationResult.hpp"
+#include "core/Image.hpp"
+#include "core/SegmentationResult.hpp"
 
 #include <string>
 #include <vector>

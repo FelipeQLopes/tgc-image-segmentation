@@ -3,7 +3,7 @@
 //   g++ -std=c++17 -Wall -Wextra -Iinclude src/DisjointSet.cpp src/Kruskal.cpp
 //   tests/test_kruskal.cpp -o build/test_kruskal
 
-#include "../include/Kruskal.hpp"
+#include "graph/Kruskal.hpp"
 #include <cassert>
 #include <cmath>
 #include <iostream>

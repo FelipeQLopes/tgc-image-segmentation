@@ -1,4 +1,4 @@
-#include "PriorityQueue.hpp"
+#include "image_processing/PriorityQueue.hpp"
 
 #include <limits>
 #include <stdexcept>

@@ -1,4 +1,4 @@
-#include "Gradient.hpp"
+#include "image_processing/Gradient.hpp"
 
 #include <algorithm>
 #include <cmath>
