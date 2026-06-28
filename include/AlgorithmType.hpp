@@ -3,5 +3,5 @@
 enum class AlgorithmType {
     COUSTY,
     IFT_GRADIENT,
-    FUTURE_3
+    FELZENSZWALB
 };

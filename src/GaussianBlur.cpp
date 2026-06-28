@@ -165,7 +165,10 @@ void GaussianBlur::convolve_horizontal(const Image& src, Image& dst,
                 int col = c + (ki - radius);       // pode estar fora dos limites
                 acc += kernel[ki] * safe_at(src, col, r, ch);
             }
-            auto value = static_cast<uint8_t>(std::clamp(std::lround(acc), 0L, 255L));
+            int clamped = static_cast<int>(std::lround(acc));
+            if (clamped < 0) clamped = 0;
+            if (clamped > 255) clamped = 255;
+            auto value = static_cast<uint8_t>(clamped);
             dst.set(c, r, ch, value);
         }
     }
@@ -191,7 +194,10 @@ void GaussianBlur::convolve_vertical(const Image& src, Image& dst,
                 int row = r + (ki - radius);       // pode estar fora dos limites
                 acc += kernel[ki] * safe_at(src, c, row, ch);
             }
-            auto value = static_cast<uint8_t>(std::clamp(std::lround(acc), 0L, 255L));
+            int clamped = static_cast<int>(std::lround(acc));
+            if (clamped < 0) clamped = 0;
+            if (clamped > 255) clamped = 255;
+            auto value = static_cast<uint8_t>(clamped);
             dst.set(c, r, ch, value);
         }
     }

@@ -2,6 +2,7 @@
 #include "image.hpp"
 #include "AlgorithmType.hpp"
 #include "IFT.hpp"
+#include "Felzenszwalb.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -308,7 +309,7 @@ static AlgorithmType select_algorithm() {
     std::cout << "\n--- Algoritmo de Segmentacao ---\n\n";
     std::cout << "  1. Cousty (hierarquico)\n";
     std::cout << "  2. IFT (gradient)\n";
-    std::cout << "  3. Outro (futuro)\n";
+    std::cout << "  3. Felzenszwalb-Huttenlocher\n";
     std::cout << "\nEscolha uma opcao [1]: ";
 
     std::string line;
@@ -316,7 +317,7 @@ static AlgorithmType select_algorithm() {
 
     if (line.empty() || line == "1") return AlgorithmType::COUSTY;
     if (line == "2") return AlgorithmType::IFT_GRADIENT;
-    if (line == "3") return AlgorithmType::FUTURE_3;
+    if (line == "3") return AlgorithmType::FELZENSZWALB;
 
     std::cout << "Opcao invalida, usando Cousty.\n";
     return AlgorithmType::COUSTY;
@@ -340,8 +341,17 @@ SegmentationResult run_algorithm(
             return ift_segment(image, ift_params);
         }
 
-        case AlgorithmType::FUTURE_3:
-            throw std::runtime_error("NAO IMPLEMENTADO");
+        case AlgorithmType::FELZENSZWALB: {
+            FelzenszwalbParams params_fz;
+            params_fz.k = 300.0;
+            params_fz.min_size = 50;
+            params_fz.connectivity = params.connectivity;
+            params_fz.sigma = 0.5;
+            params_fz.compute_saliency = params.compute_saliency;
+
+            return felzenszwalb_segment(image, params_fz);
+        }
+
     }
 
     throw std::runtime_error("Algoritmo invalido");
