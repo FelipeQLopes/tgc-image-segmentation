@@ -4,8 +4,8 @@
 //   src/DisjointSet.cpp src/Kruskal.cpp src/Hierarchy.cpp src/SaliencyMap.cpp
 //   src/Cousty.cpp tests/test_cousty.cpp -o build/test_cousty -lm
 
-#include "../include/Cousty.hpp"
-#include "../include/image.hpp"
+#include "algorithms/Cousty.hpp"
+#include "core/Image.hpp"
 #include <cassert>
 #include <cmath>
 #include <iostream>

@@ -1,4 +1,4 @@
-#include "Graph.hpp"
+#include "graph/Graph.hpp"
 
 #include <algorithm>
 #include <array>

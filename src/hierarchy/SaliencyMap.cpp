@@ -1,4 +1,4 @@
-#include "../include/SaliencyMap.hpp"
+#include "hierarchy/SaliencyMap.hpp"
 
 #include <algorithm>
 #include <cmath>

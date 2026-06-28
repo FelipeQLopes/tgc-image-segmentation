@@ -1,8 +1,8 @@
-#include "IFT.hpp"
-#include "Gradient.hpp"
-#include "Cousty.hpp"
-#include "image.hpp"
-#include "MarkerGeneration.hpp"
+#include "algorithms/IFT.hpp"
+#include "image_processing/Gradient.hpp"
+#include "algorithms/Cousty.hpp"
+#include "core/Image.hpp"
+#include "image_processing/MarkerGeneration.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -91,27 +91,7 @@ SegmentationResult ift_segment(const Image& image, const IFTParams& params) {
 
     std::vector<int> seeds =
         generate_markers(image, mp);
-    save_image("results/gradient.png", gradient); //mudar nome do arquivo
-    // int zeros = 0;
 
-    // for (int y = 0; y < gradient.height; y++) {
-    //     for (int x = 0; x < gradient.width; x++) {
-    //         if (gradient.at(x,y,0) == 0)
-    //             zeros++;
-    //     }
-    // }
-
-    // std::cout << "Pixels com gradiente 0 = "
-    //         << zeros << std::endl;
-
-    
-    int nSeeds = 0;
-
-    for (int s : seeds)
-        if (s >= 0)
-            nSeeds++;
-
-    std::cout << "Seeds = " << nSeeds << std::endl;
     return ift_segment_with_seeds(image, seeds, params.connectivity);
 }
 
@@ -177,9 +157,7 @@ SegmentationResult ift_segment_with_seeds(
     result.num_segments = static_cast<int>(
         std::set<int>(labels.begin(), labels.end()).size()
     );
-    std::cout << "Segmentos = "
-          << result.num_segments
-          << std::endl;
+
 
     if (result.num_segments == 0) {
         result.num_segments = 1;

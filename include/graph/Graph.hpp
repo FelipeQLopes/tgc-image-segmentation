@@ -1,8 +1,8 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
 
-#include "Edge.hpp"
-#include "image.hpp"
+#include "graph/Edge.hpp"
+#include "core/Image.hpp"
 
 #include <algorithm>
 #include <utility>

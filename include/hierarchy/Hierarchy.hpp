@@ -1,7 +1,7 @@
 #ifndef HIERARCHY_HPP
 #define HIERARCHY_HPP
 
-#include "Edge.hpp"
+#include "graph/Edge.hpp"
 
 #include <vector>
 

@@ -1,7 +1,7 @@
 #ifndef GRADIENT_HPP
 #define GRADIENT_HPP
 
-#include "image.hpp"
+#include "core/Image.hpp"
 
 #include <vector>
 

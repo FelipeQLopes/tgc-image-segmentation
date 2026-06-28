@@ -19,8 +19,23 @@ TESTDIR = tests
 CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++17 -g -O0 -I$(INCDIR)
 
-# Encontra todos os arquivos .cpp na pasta src
-SOURCES := $(wildcard $(SRCDIR)/*.cpp)
+# Encontra todos os arquivos .cpp na pasta src e subpastas
+SOURCES := $(wildcard $(SRCDIR)/*.cpp) \
+           $(wildcard $(SRCDIR)/core/*.cpp) \
+           $(wildcard $(SRCDIR)/graph/*.cpp) \
+           $(wildcard $(SRCDIR)/image_processing/*.cpp) \
+           $(wildcard $(SRCDIR)/hierarchy/*.cpp) \
+           $(wildcard $(SRCDIR)/algorithms/*.cpp)
+
+ifeq ($(OS),Windows_NT)
+    MKDIR = if not exist "$(subst /,\,$(@D))" mkdir "$(subst /,\,$(@D))"
+    MKDIR_BUILD = if not exist "$(subst /,\,$(BUILDDIR))" mkdir "$(subst /,\,$(BUILDDIR))"
+    RMDIR = if exist "$(subst /,\,$(BUILDDIR))" rmdir /s /q "$(subst /,\,$(BUILDDIR))"
+else
+    MKDIR = mkdir -p $(@D)
+    MKDIR_BUILD = mkdir -p $(BUILDDIR)
+    RMDIR = rm -rf $(BUILDDIR)
+endif
 
 # Define os arquivos de objeto (.o) correspondentes dentro da pasta build
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
@@ -32,17 +47,25 @@ all: $(BUILDDIR) $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(OBJECTS) -o $@
 
-# Compilacao
+# Compilacao (cria subdiretorios no build automaticamente)
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp
+	@$(MKDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Garante que build existe
 $(BUILDDIR):
-	mkdir -p $(BUILDDIR)
+	@$(MKDIR_BUILD)
 
 # Executa
 run: all
 	./$(TARGET)
+
+# Atalhos para caminhos de source
+SRC_CORE = $(SRCDIR)/core
+SRC_GRAPH = $(SRCDIR)/graph
+SRC_IMGPROC = $(SRCDIR)/image_processing
+SRC_HIERARCHY = $(SRCDIR)/hierarchy
+SRC_ALGO = $(SRCDIR)/algorithms
 
 # Testes
 
@@ -75,36 +98,36 @@ test_gradient: $(BUILDDIR) $(TEST_GRADIENT_TARGET)
 test_felzenszwalb: $(BUILDDIR) $(TEST_FELZENSZWALB_TARGET)
 	./$(TEST_FELZENSZWALB_TARGET)
 
-$(TEST_DS_TARGET): $(TESTDIR)/test_disjoint_set.cpp $(SRCDIR)/DisjointSet.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(TESTDIR)/test_disjoint_set.cpp -o $@ -lm
+$(TEST_DS_TARGET): $(TESTDIR)/test_disjoint_set.cpp $(SRC_GRAPH)/DisjointSet.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_GRAPH)/DisjointSet.cpp $(TESTDIR)/test_disjoint_set.cpp -o $@ -lm
 
-$(TEST_TARGET): $(TESTDIR)/test_image.cpp $(SRCDIR)/Image.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(TESTDIR)/test_image.cpp -o $@ -lm
+$(TEST_TARGET): $(TESTDIR)/test_image.cpp $(SRC_CORE)/Image.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_CORE)/Image.cpp $(TESTDIR)/test_image.cpp -o $@ -lm
 
-$(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(TESTDIR)/test_graph.cpp -o $@ -lm
+$(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp $(TESTDIR)/test_graph.cpp -o $@ -lm
 
-$(TEST_KRUSKAL_TARGET): $(TESTDIR)/test_kruskal.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(TESTDIR)/test_kruskal.cpp -o $@ -lm
+$(TEST_KRUSKAL_TARGET): $(TESTDIR)/test_kruskal.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp $(TESTDIR)/test_kruskal.cpp -o $@ -lm
 
-$(TEST_PQ_TARGET): $(TESTDIR)/test_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/test_priority_queue.cpp -o $@
+$(TEST_PQ_TARGET): $(TESTDIR)/test_priority_queue.cpp $(SRC_IMGPROC)/PriorityQueue.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_IMGPROC)/PriorityQueue.cpp $(TESTDIR)/test_priority_queue.cpp -o $@
 
-$(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
+$(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp $(SRC_HIERARCHY)/Hierarchy.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp $(SRC_HIERARCHY)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
 
-$(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp $(TESTDIR)/test_cousty.cpp -o $@ -lm
+$(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp $(SRC_HIERARCHY)/Hierarchy.cpp $(SRC_HIERARCHY)/SaliencyMap.cpp $(SRC_ALGO)/Cousty.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_GRAPH)/Kruskal.cpp $(SRC_HIERARCHY)/Hierarchy.cpp $(SRC_HIERARCHY)/SaliencyMap.cpp $(SRC_ALGO)/Cousty.cpp $(TESTDIR)/test_cousty.cpp -o $@ -lm
 
-$(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@ -lm
+$(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRC_CORE)/Image.cpp $(SRC_IMGPROC)/Gradient.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_CORE)/Image.cpp $(SRC_IMGPROC)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@ -lm
 
-$(TEST_FELZENSZWALB_TARGET): $(TESTDIR)/test_felzenszwalb.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Felzenszwalb.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Felzenszwalb.cpp $(TESTDIR)/test_felzenszwalb.cpp -o $@ -lm
+$(TEST_FELZENSZWALB_TARGET): $(TESTDIR)/test_felzenszwalb.cpp $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_ALGO)/Felzenszwalb.cpp
+	$(CXX) $(CXXFLAGS) $(SRC_CORE)/Image.cpp $(SRC_GRAPH)/Graph.cpp $(SRC_GRAPH)/DisjointSet.cpp $(SRC_ALGO)/Felzenszwalb.cpp $(TESTDIR)/test_felzenszwalb.cpp -o $@ -lm
 
 # Limpa
 clean:
-	rm -rf $(BUILDDIR)
+	@$(RMDIR)
 
 
 .PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient test_felzenszwalb

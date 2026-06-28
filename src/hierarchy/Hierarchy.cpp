@@ -1,5 +1,5 @@
-#include "../include/Hierarchy.hpp"
-#include "../include/DisjointSet.hpp"
+#include "hierarchy/Hierarchy.hpp"
+#include "graph/DisjointSet.hpp"
 
 #include <algorithm>
 #include <vector>

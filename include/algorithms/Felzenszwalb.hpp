@@ -1,8 +1,8 @@
 #ifndef FELZENSZWALB_HPP
 #define FELZENSZWALB_HPP
 
-#include "image.hpp"
-#include "SegmentationResult.hpp"
+#include "core/Image.hpp"
+#include "core/SegmentationResult.hpp"
 
 /**
  * @brief Estrutura de parametros para o algoritmo de Felzenszwalb-Huttenlocher.

@@ -2,7 +2,7 @@
 // Compilar:
 //   g++ -std=c++17 -O2 -Wall -Wextra -o test_gaussian test_gaussian_blur.cpp GaussianBlur.cpp
 
-#include "GaussianBlur.hpp"
+#include "image_processing/GaussianBlur.hpp"
 
 #include <algorithm>
 #include <cassert>

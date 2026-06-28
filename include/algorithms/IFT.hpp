@@ -1,8 +1,8 @@
 #ifndef IFT_HPP
 #define IFT_HPP
 
-#include "image.hpp"
-#include "SegmentationResult.hpp"
+#include "core/Image.hpp"
+#include "core/SegmentationResult.hpp"
 
 #include <limits>
 #include <string>

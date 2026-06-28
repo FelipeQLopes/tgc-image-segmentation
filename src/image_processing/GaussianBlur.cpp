@@ -1,4 +1,4 @@
-#include "GaussianBlur.hpp"
+#include "image_processing/GaussianBlur.hpp"
 
 #include <cmath>
 #include <algorithm>

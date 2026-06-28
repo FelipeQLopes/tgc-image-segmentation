@@ -1,6 +1,6 @@
-#include "Felzenszwalb.hpp"
-#include "DisjointSet.hpp"
-#include "Graph.hpp"
+#include "algorithms/Felzenszwalb.hpp"
+#include "graph/DisjointSet.hpp"
+#include "graph/Graph.hpp"
 
 #include <algorithm>
 #include <chrono>

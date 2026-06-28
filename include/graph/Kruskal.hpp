@@ -1,7 +1,7 @@
 #ifndef KRUSKAL_HPP
 #define KRUSKAL_HPP
 
-#include "Edge.hpp"
+#include "graph/Edge.hpp"
 #include <vector>
 
 /**

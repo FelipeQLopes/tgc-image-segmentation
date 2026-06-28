@@ -2,8 +2,8 @@
 // Compilar:
 //   g++ -std=c++17 -Wall -Wextra -Iinclude src/Image.cpp src/Graph.cpp tests/test_graph.cpp -o build/test_graph -lm
 
-#include "Graph.hpp"
-#include "image.hpp"
+#include "graph/Graph.hpp"
+#include "core/Image.hpp"
 
 #include <cassert>
 #include <cmath>

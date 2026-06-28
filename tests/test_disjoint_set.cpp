@@ -3,7 +3,7 @@
 //   g++ -std=c++17 -Wall -Wextra -Iinclude src/DisjointSet.cpp
 //   tests/test_disjoint_set.cpp -o build/test_disjoint_set
 
-#include "../include/DisjointSet.hpp"
+#include "graph/DisjointSet.hpp"
 #include <cassert>
 #include <iostream>
 
