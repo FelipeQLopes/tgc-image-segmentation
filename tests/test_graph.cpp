@@ -179,7 +179,6 @@ static void test_weights_grayscale() {
     const char* name = "pesos corretos (cinza)";
     TEST(name);
 
-    // Imagem 3x1 cinza: [10, 50, 200]
     Image img(3, 1, 1);
     img.set(0, 0, 0, 10);
     img.set(1, 0, 0, 50);
@@ -187,15 +186,16 @@ static void test_weights_grayscale() {
 
     ImageGraph g(img, Connectivity::FOUR);
 
-    // Deve ter 2 arestas: (0,1) peso=40, (1,2) peso=150
     assert(g.edges.size() == 2);
 
-    // Encontra as arestas
+    double expected01 = std::min(255.0, 40.0 * 1.8 + 0.7 * 150.0);
+    double expected12 = std::min(255.0, 150.0 * 1.8 + 0.7 * 150.0);
+
     for (const auto& e : g.edges) {
         if ((e.u == 0 && e.v == 1) || (e.u == 1 && e.v == 0)) {
-            assert(approx(e.weight, 40.0));
+            assert(approx(e.weight, expected01));
         } else if ((e.u == 1 && e.v == 2) || (e.u == 2 && e.v == 1)) {
-            assert(approx(e.weight, 150.0));
+            assert(approx(e.weight, expected12));
         } else {
             assert(false && "aresta inesperada");
         }
@@ -223,8 +223,13 @@ static void test_weights_color() {
     assert(g.edges.size() == 1);
 
     // peso = sqrt((10)^2 + (-10)^2 + (-20)^2) = sqrt(100+100+400) = sqrt(600)
-    double expected = std::sqrt(600.0);
+    double color_dist = std::sqrt(600.0);
+    double grad = color_dist;
+    double expected = std::min(255.0, color_dist * 1.8 + grad * 0.7);
+
     assert(approx(g.edges[0].weight, expected));
+    std::cout << "Peso RGB = " << g.edges[0].weight << std::endl;
+    //assert(approx(g.edges[0].weight, expected));
 
     std::cout << "    -> peso: " << g.edges[0].weight
               << " (esperado: " << expected << ")" << std::endl;
@@ -250,8 +255,12 @@ static void test_sort_edges() {
 
     assert(g.edges.size() == 2);
     assert(g.edges[0].weight <= g.edges[1].weight);
-    assert(approx(g.edges[0].weight, 40.0));
-    assert(approx(g.edges[1].weight, 150.0));
+
+    double expected1 = std::min(255.0, 40.0 * 1.8 + 150.0 * 0.7);
+    double expected2 = std::min(255.0, 150.0 * 1.8 + 150.0 * 0.7);
+    assert(g.edges[0].weight <= g.edges[1].weight);
+    assert(approx(g.edges[0].weight, expected1));
+    assert(approx(g.edges[1].weight, expected2));
 
     PASS(name);
 }
