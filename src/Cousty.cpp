@@ -61,10 +61,11 @@ SegmentationResult cousty_segment(const Image& image,
     hierarchy.build_from_mst(mst.mst_edges, graph.num_vertices);
 
     // 4. Cortar hierarquia no nivel lambda
-    result.labels = hierarchy.cut_at_level(params.lambda);
+    auto labels = hierarchy.cut_at_level(params.lambda);
+    //result.labels = hierarchy.cut_at_level(params.lambda);
 
     // Contar segmentos unicos
-    set<int> unique_labels(result.labels.begin(), result.labels.end());
+    set<int> unique_labels(labels.begin(), labels.end());
     result.num_segments = static_cast<int>(unique_labels.size());
 
     // 5. Gerar saliency map (opcional)
@@ -75,7 +76,7 @@ SegmentationResult cousty_segment(const Image& image,
 
     // 6. Gerar imagem colorizada da segmentacao
     result.segmentation_image = colorize_segmentation(
-        result.labels, image.width, image.height);
+        labels, image.width, image.height);
 
     // 7. Medir tempo de execucao
     auto t_end = chrono::high_resolution_clock::now();

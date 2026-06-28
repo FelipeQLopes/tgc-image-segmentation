@@ -1,5 +1,6 @@
 #include "IFT.hpp"
 #include "Gradient.hpp"
+#include "Cousty.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -70,7 +71,7 @@ std::vector<int> normalize_seed_labels(const std::vector<int>& input, int width,
 
 }  // namespace
 
-IFTResult ift_segment(const Image& image, const IFTParams& params) {
+SegmentationResult ift_segment(const Image& image, const IFTParams& params) {
     if (params.connectivity != 4 && params.connectivity != 8) {
         throw std::invalid_argument("IFT: connectivity deve ser 4 ou 8");
     }
@@ -84,15 +85,12 @@ IFTResult ift_segment(const Image& image, const IFTParams& params) {
     return ift_segment_with_seeds(image, seeds, params.connectivity);
 }
 
-IFTResult ift_segment_with_seeds(const Image& image,
-                                 const std::vector<int>& seed_labels,
-                                 int connectivity) {
+SegmentationResult ift_segment_with_seeds(
+    const Image& image,
+    const std::vector<int>& seed_labels,
+    int connectivity
+) {
     auto t_start = std::chrono::high_resolution_clock::now();
-
-    IFTResult result;
-    result.labels.assign(static_cast<size_t>(image.width * image.height), -1);
-    result.costs.assign(static_cast<size_t>(image.width * image.height), std::numeric_limits<double>::infinity());
-    result.predecessors.assign(static_cast<size_t>(image.width * image.height), -1);
 
     const int width = image.width;
     const int height = image.height;
@@ -101,18 +99,23 @@ IFTResult ift_segment_with_seeds(const Image& image,
     std::vector<IFTStatus> status(n_pixels, IFTStatus::WHITE);
 
     Image gradient = compute_gradient(image);
+
     std::vector<int> seeds = seed_labels;
     if (seeds.empty()) {
         seeds = find_regional_minima(gradient);
     }
 
     std::vector<int> normalized = normalize_seed_labels(seeds, width, height);
+
     std::priority_queue<IFTNode, std::vector<IFTNode>, std::greater<IFTNode>> pq;
+
+    std::vector<double> cost(n_pixels, std::numeric_limits<double>::infinity());
+    std::vector<int> labels(n_pixels, -1);
 
     for (int i = 0; i < n_pixels; ++i) {
         if (normalized[i] >= 0) {
-            result.labels[i] = normalized[i];
-            result.costs[i] = 0.0;
+            labels[i] = normalized[i];
+            cost[i] = 0.0;
             pq.push({0.0, i});
         }
     }
@@ -120,36 +123,40 @@ IFTResult ift_segment_with_seeds(const Image& image,
     while (!pq.empty()) {
         IFTNode node = pq.top(); pq.pop();
         int u = node.node;
-        if (status[u] == IFTStatus::BLACK) {
-            continue;
-        }
+
+        if (status[u] == IFTStatus::BLACK) continue;
         status[u] = IFTStatus::BLACK;
 
         auto neighbors = build_neighbors(u, width, height, connectivity, gradient);
+
         for (const auto& [v, w] : neighbors) {
-            if (status[v] == IFTStatus::BLACK) {
-                continue;
-            }
-            double new_cost = std::max(result.costs[u], w);
-            if (new_cost < result.costs[v]) {
-                result.costs[v] = new_cost;
-                result.predecessors[v] = u;
-                result.labels[v] = result.labels[u];
+            if (status[v] == IFTStatus::BLACK) continue;
+
+            double new_cost = std::max(cost[u], w);
+
+            if (new_cost < cost[v]) {
+                cost[v] = new_cost;
+                labels[v] = labels[u];
                 pq.push({new_cost, v});
             }
         }
     }
 
-    std::set<int> labels_set(result.labels.begin(), result.labels.end());
-    result.num_segments = static_cast<int>(labels_set.size());
+    SegmentationResult result;
+    result.num_segments = static_cast<int>(
+        std::set<int>(labels.begin(), labels.end()).size()
+    );
 
     if (result.num_segments == 0) {
         result.num_segments = 1;
     }
 
-    result.segmentation_image = colorize_segmentation(result.labels, width, height);
+    result.segmentation_image =
+        colorize_segmentation(labels, width, height);
 
     auto t_end = std::chrono::high_resolution_clock::now();
-    result.elapsed_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+    result.elapsed_ms =
+        std::chrono::duration<double, std::milli>(t_end - t_start).count();
+
     return result;
 }

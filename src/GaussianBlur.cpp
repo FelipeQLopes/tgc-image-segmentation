@@ -2,8 +2,6 @@
 
 #include <cmath>
 #include <algorithm>
-#include <fstream>
-#include <sstream>
 #include <stdexcept>
 #include <numeric>
 
@@ -11,63 +9,86 @@
 //  Entrada/Saída PPM (P6 binário, RGB de 8 bits)
 // ===========================================================================
 
-Image load_ppm(const std::string& path)
+namespace {
+
+inline int reflect101(int p, int size)
 {
-    std::ifstream f(path, std::ios::binary);
-    if (!f) throw std::runtime_error("Cannot open: " + path);
+    if (p < 0)
+        return -p;
 
-    std::string magic;
-    f >> magic;
-    if (magic != "P6") throw std::runtime_error("Only binary P6 PPM supported");
+    if (p >= size)
+        return 2 * size - p - 2;
 
-    // Ignora comentários
-    char c;
-    f.get(c);
-    while (c == '#') { f.ignore(4096, '\n'); f.get(c); }
-    f.putback(c);
-
-    int w, h, maxval;
-    f >> w >> h >> maxval;
-    f.get(); // consome o único caractere de espaço em branco após maxval
-
-    if (maxval != 255)
-        throw std::runtime_error("Only 8-bit PPM (maxval=255) supported");
-
-    Image img(w, h, 3);
-    std::vector<uint8_t> row_buf(w * 3);
-
-    for (int r = 0; r < h; ++r) {
-        f.read(reinterpret_cast<char*>(row_buf.data()), w * 3);
-        for (int c2 = 0; c2 < w; ++c2) {
-            img.at(r, c2, 0) = static_cast<float>(row_buf[c2 * 3 + 0]); // R
-            img.at(r, c2, 1) = static_cast<float>(row_buf[c2 * 3 + 1]); // G
-            img.at(r, c2, 2) = static_cast<float>(row_buf[c2 * 3 + 2]); // B
-        }
-    }
-    return img;
+    return p;
 }
 
-void save_ppm(const std::string& path, const Image& img)
+inline uint8_t safe_at(const Image& img, int x, int y, int ch)
 {
-    std::ofstream f(path, std::ios::binary);
-    if (!f) throw std::runtime_error("Cannot write: " + path);
+    x = reflect101(x, img.width);
+    y = reflect101(y, img.height);
 
-    f << "P6\n" << img.width << " " << img.height << "\n255\n";
-
-    std::vector<uint8_t> row_buf(img.width * img.channels);
-
-    for (int r = 0; r < img.height; ++r) {
-        for (int c = 0; c < img.width; ++c) {
-            for (int ch = 0; ch < img.channels; ++ch) {
-                float v = img.at(r, c, ch);
-                // Limita ao intervalo [0, 255] e arredonda
-                row_buf[c * img.channels + ch] =
-                    static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, v + 0.5f)));
-            }
-        }
-        f.write(reinterpret_cast<char*>(row_buf.data()), img.width * img.channels);
-    }
+    return img.at(x, y, ch);
 }
+
+}
+
+// Image load_ppm(const std::string& path)
+// {
+//     std::ifstream f(path, std::ios::binary);
+//     if (!f) throw std::runtime_error("Cannot open: " + path);
+
+//     std::string magic;
+//     f >> magic;
+//     if (magic != "P6") throw std::runtime_error("Only binary P6 PPM supported");
+
+//     // Ignora comentários
+//     char c;
+//     f.get(c);
+//     while (c == '#') { f.ignore(4096, '\n'); f.get(c); }
+//     f.putback(c);
+
+//     int w, h, maxval;
+//     f >> w >> h >> maxval;
+//     f.get(); // consome o único caractere de espaço em branco após maxval
+
+//     if (maxval != 255)
+//         throw std::runtime_error("Only 8-bit PPM (maxval=255) supported");
+
+//     Image img(w, h, 3);
+//     std::vector<uint8_t> row_buf(w * 3);
+
+//     for (int r = 0; r < h; ++r) {
+//         f.read(reinterpret_cast<char*>(row_buf.data()), w * 3);
+//         for (int c2 = 0; c2 < w; ++c2) {
+//             img.set(c2, r, 0, row_buf[c2 * 3 + 0]);
+//             img.set(c2, r, 1, row_buf[c2 * 3 + 1]);
+//             img.set(c2, r, 2, row_buf[c2 * 3 + 2]);
+//         }
+//     }
+//     return img;
+// }
+
+// void save_ppm(const std::string& path, const Image& img)
+// {
+//     std::ofstream f(path, std::ios::binary);
+//     if (!f) throw std::runtime_error("Cannot write: " + path);
+
+//     f << "P6\n" << img.width << " " << img.height << "\n255\n";
+
+//     std::vector<uint8_t> row_buf(img.width * img.channels);
+
+//     for (int r = 0; r < img.height; ++r) {
+//         for (int c = 0; c < img.width; ++c) {
+//             for (int ch = 0; ch < img.channels; ++ch) {
+//                 uint8_t v = img.at(c, r, ch);
+                
+//                 row_buf[c * img.channels + ch] =
+//                     static_cast<uint8_t>(std::min(255.0f, std::max(0.0f, v + 0.5f)));
+//             }
+//         }
+//         f.write(reinterpret_cast<char*>(row_buf.data()), img.width * img.channels);
+//     }
+// }
 
 // ===========================================================================
 //  GaussianBlur – construção do kernel
@@ -82,8 +103,7 @@ void save_ppm(const std::string& path, const Image& img)
 // artefatos visíveis de truncamento.
 //
 
-int GaussianBlur::kernel_radius(float sigma)
-{
+int GaussianBlur::kernel_radius(float sigma){
     return static_cast<int>(std::ceil(2.0f * sigma));
 }
 
@@ -143,9 +163,10 @@ void GaussianBlur::convolve_horizontal(const Image& src, Image& dst,
             float acc = 0.0f;
             for (int ki = 0; ki < static_cast<int>(kernel.size()); ++ki) {
                 int col = c + (ki - radius);       // pode estar fora dos limites
-                acc += kernel[ki] * src.safe_at(r, col, ch);
+                acc += kernel[ki] * safe_at(src, col, r, ch);
             }
-            dst.at(r, c, ch) = acc;
+            auto value = static_cast<uint8_t>(std::clamp(std::lround(acc), 0L, 255L));
+            dst.set(c, r, ch, value);
         }
     }
 }
@@ -168,9 +189,10 @@ void GaussianBlur::convolve_vertical(const Image& src, Image& dst,
             float acc = 0.0f;
             for (int ki = 0; ki < static_cast<int>(kernel.size()); ++ki) {
                 int row = r + (ki - radius);       // pode estar fora dos limites
-                acc += kernel[ki] * src.safe_at(row, c, ch);
+                acc += kernel[ki] * safe_at(src, c, row, ch);
             }
-            dst.at(r, c, ch) = acc;
+            auto value = static_cast<uint8_t>(std::clamp(std::lround(acc), 0L, 255L));
+            dst.set(c, r, ch, value);
         }
     }
 }

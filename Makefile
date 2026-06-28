@@ -4,10 +4,9 @@ TEST_GRAPH_TARGET = build/test_graph
 TEST_DS_TARGET = build/test_disjoint_set
 TEST_KRUSKAL_TARGET = build/test_kruskal
 TEST_PQ_TARGET = build/test_priority_queue
-TEST_GRADIENT_TARGET = build/test_gradient
-TEST_IFT_TARGET = build/test_ift
 TEST_HIERARCHY_TARGET = build/test_hierarchy
 TEST_COUSTY_TARGET = build/test_cousty
+TEST_GRADIENT_TARGET = build/test_gradient
 
 # Diretorios
 SRCDIR = src
@@ -17,10 +16,10 @@ TESTDIR = tests
 
 # Compilador e Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -std=c++17 -I$(INCDIR)
+CXXFLAGS = -Wall -Wextra -std=c++17 -g -O0 -I$(INCDIR)
 
-# Encontra todos os arquivos .cpp na pasta src, exceto o demo visual
-SOURCES = $(filter-out $(SRCDIR)/demo_gradient.cpp,$(wildcard $(SRCDIR)/*.cpp))
+# Encontra todos os arquivos .cpp na pasta src
+SOURCES := $(wildcard $(SRCDIR)/*.cpp)
 
 # Define os arquivos de objeto (.o) correspondentes dentro da pasta build
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
@@ -45,7 +44,8 @@ run: all
 	./$(TARGET)
 
 # Testes
-test: test_ds test_image test_graph test_kruskal test_pq test_gradient test_ift test_hierarchy test_cousty
+
+test: test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient
 
 test_ds: $(BUILDDIR) $(TEST_DS_TARGET)
 	./$(TEST_DS_TARGET)
@@ -68,6 +68,9 @@ test_hierarchy: $(BUILDDIR) $(TEST_HIERARCHY_TARGET)
 test_cousty: $(BUILDDIR) $(TEST_COUSTY_TARGET)
 	./$(TEST_COUSTY_TARGET)
 
+test_gradient: $(BUILDDIR) $(TEST_GRADIENT_TARGET)
+	./$(TEST_GRADIENT_TARGET)
+
 $(TEST_DS_TARGET): $(TESTDIR)/test_disjoint_set.cpp $(SRCDIR)/DisjointSet.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(TESTDIR)/test_disjoint_set.cpp -o $@ -lm
 
@@ -80,33 +83,21 @@ $(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gr
 $(TEST_KRUSKAL_TARGET): $(TESTDIR)/test_kruskal.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(TESTDIR)/test_kruskal.cpp -o $@ -lm
 
-$(TEST_PQ_TARGET): $(TESTDIR)/teste_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/teste_priority_queue.cpp -o $@
+$(TEST_PQ_TARGET): $(TESTDIR)/test_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/test_priority_queue.cpp -o $@
 
-test_gradient: $(BUILDDIR) $(TEST_GRADIENT_TARGET)
-	./$(TEST_GRADIENT_TARGET)
-
-$(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Gradient.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@
-
-test_ift: $(BUILDDIR) $(TEST_IFT_TARGET)
-	./$(TEST_IFT_TARGET)
-
-$(TEST_IFT_TARGET): $(TESTDIR)/test_ift.cpp $(SRCDIR)/IFT.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/Image.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/IFT.cpp $(TESTDIR)/test_ift.cpp -o $@ -lm
-
-# Demo visual do gradiente e minimos regionais
-demo: $(BUILDDIR)
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(SRCDIR)/demo_gradient.cpp -o $(BUILDDIR)/demo_gradient -lm
-	./$(BUILDDIR)/demo_gradient
 $(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
 
 $(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp $(TESTDIR)/test_cousty.cpp -o $@ -lm
 
+$(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@ -lm
+
 # Limpa
 clean:
-	rm -rf $(BUILDDIR) output/*.png
+	rm -rf $(BUILDDIR)
 
-.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient test_ift demo
+
+.PHONY: all run clean test test_ds test_image test_graph test_kruskal test_pq test_hierarchy test_cousty test_gradient
