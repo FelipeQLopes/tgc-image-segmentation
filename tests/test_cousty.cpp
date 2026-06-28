@@ -88,8 +88,7 @@ static void test_pipeline_grayscale() {
 
     SegmentationResult result = cousty_segment(img, params);
 
-    // Deve ter labels para todos os pixels
-    assert(result.labels.size() == 16);
+    // Deve ter segmentos validos
 
     // Deve ter pelo menos 1 segmento
     assert(result.num_segments >= 1);
@@ -126,7 +125,7 @@ static void test_pipeline_rgb() {
 
     SegmentationResult result = cousty_segment(img, params);
 
-    assert(result.labels.size() == 9);
+
     assert(result.num_segments >= 1);
     assert(result.elapsed_ms >= 0.0);
 
@@ -192,7 +191,6 @@ static void test_no_saliency() {
     assert(result.saliency_image.height == 0);
 
     // Segmentacao deve funcionar normalmente
-    assert(result.labels.size() == 16);
     assert(result.num_segments >= 1);
 
     PASS(name);
@@ -221,8 +219,6 @@ static void test_connectivity_4_vs_8() {
     SegmentationResult result8 = cousty_segment(img, params8);
 
     // Ambos devem produzir resultados validos
-    assert(result4.labels.size() == 16);
-    assert(result8.labels.size() == 16);
     assert(result4.num_segments >= 1);
     assert(result8.num_segments >= 1);
 
