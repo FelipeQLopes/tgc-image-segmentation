@@ -19,7 +19,7 @@ CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++17 -g -O0 -I$(INCDIR)
 
 # Encontra todos os arquivos .cpp na pasta src
-SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+SOURCES := $(wildcard $(SRCDIR)/*.cpp)
 
 # Define os arquivos de objeto (.o) correspondentes dentro da pasta build
 OBJECTS = $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SOURCES))
@@ -83,8 +83,8 @@ $(TEST_GRAPH_TARGET): $(TESTDIR)/test_graph.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gr
 $(TEST_KRUSKAL_TARGET): $(TESTDIR)/test_kruskal.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(TESTDIR)/test_kruskal.cpp -o $@ -lm
 
-$(TEST_PQ_TARGET): $(TESTDIR)/teste_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
-	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/teste_priority_queue.cpp -o $@
+$(TEST_PQ_TARGET): $(TESTDIR)/test_priority_queue.cpp $(SRCDIR)/PriorityQueue.cpp
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/PriorityQueue.cpp $(TESTDIR)/test_priority_queue.cpp -o $@
 
 $(TEST_HIERARCHY_TARGET): $(TESTDIR)/test_hierarchy.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(TESTDIR)/test_hierarchy.cpp -o $@ -lm
@@ -93,7 +93,7 @@ $(TEST_COUSTY_TARGET): $(TESTDIR)/test_cousty.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/
 	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Graph.cpp $(SRCDIR)/DisjointSet.cpp $(SRCDIR)/Kruskal.cpp $(SRCDIR)/Hierarchy.cpp $(SRCDIR)/SaliencyMap.cpp $(SRCDIR)/Cousty.cpp $(TESTDIR)/test_cousty.cpp -o $@ -lm
 
 $(TEST_GRADIENT_TARGET): $(TESTDIR)/test_gradient.cpp $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp
-	$(CXX) $(CXXFLAGS) \$(SRCDIR)/Image.cpp \$(SRCDIR)/Gradient.cpp \$(TESTDIR)/test_gradient.cpp \-o $@ -lm
+	$(CXX) $(CXXFLAGS) $(SRCDIR)/Image.cpp $(SRCDIR)/Gradient.cpp $(TESTDIR)/test_gradient.cpp -o $@ -lm
 
 # Limpa
 clean:

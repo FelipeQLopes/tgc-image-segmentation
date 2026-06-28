@@ -1,5 +1,7 @@
 #include "Cousty.hpp"
 #include "image.hpp"
+#include "AlgorithmType.hpp"
+#include "IFT.hpp"
 
 #include <algorithm>
 #include <cerrno>
@@ -15,6 +17,7 @@
 #ifdef _WIN32
 #include <direct.h>
 #endif
+SegmentationResult run_algorithm(AlgorithmType type,const Image& image,const CoustyParams& params);
 
 using namespace std;
 
@@ -262,13 +265,20 @@ static void ensure_output_dir(const string& out_dir) {
  * @brief Executa o pipeline para um unico lambda e salva os resultados.
  * @return O SegmentationResult produzido.
  */
+// SegmentationResult run_algorithm(
+//     AlgorithmType type,
+//     const Image& image,
+//     const CoustyParams& params
+// );
+
 static SegmentationResult run_single(
+        AlgorithmType algo,
         const Image&  image,
         CoustyParams  params,
         const string& seg_path,
         const string& sal_path) {
 
-    SegmentationResult result = cousty_segment(image, params);
+    SegmentationResult result = run_algorithm(algo, image, params);
 
     try {
         save_image(seg_path, result.segmentation_image);
@@ -278,19 +288,69 @@ static SegmentationResult run_single(
     }
 
     if (params.compute_saliency && !sal_path.empty()) {
-        try {
-            save_image(sal_path, result.saliency_image);
-            cout << "  Saliency map salvo em: " << sal_path << endl;
-        } catch (const exception& e) {
-            cerr << "  Erro ao salvar saliency map: " << e.what() << endl;
+        if (result.saliency_image.width > 0 && result.saliency_image.height > 0 &&
+            result.saliency_image.channels > 0) {
+            try {
+                save_image(sal_path, result.saliency_image);
+                cout << "  Saliency map salvo em: " << sal_path << endl;
+            } catch (const exception& e) {
+                cerr << "  Erro ao salvar saliency map: " << e.what() << endl;
+            }
+        } else {
+            cout << "  Saliency map nao disponivel para este algoritmo." << endl;
         }
     }
 
     return result;
 }
 
+static AlgorithmType select_algorithm() {
+    std::cout << "\n--- Algoritmo de Segmentacao ---\n\n";
+    std::cout << "  1. Cousty (hierarquico)\n";
+    std::cout << "  2. IFT (gradient)\n";
+    std::cout << "  3. Outro (futuro)\n";
+    std::cout << "\nEscolha uma opcao [1]: ";
+
+    std::string line;
+    std::getline(std::cin, line);
+
+    if (line.empty() || line == "1") return AlgorithmType::COUSTY;
+    if (line == "2") return AlgorithmType::IFT_GRADIENT;
+    if (line == "3") return AlgorithmType::FUTURE_3;
+
+    std::cout << "Opcao invalida, usando Cousty.\n";
+    return AlgorithmType::COUSTY;
+}
+
+SegmentationResult run_algorithm(
+    AlgorithmType type,
+    const Image& image,
+    const CoustyParams& params
+) {
+    switch (type) {
+
+        case AlgorithmType::COUSTY:
+            return cousty_segment(image, params);
+
+        case AlgorithmType::IFT_GRADIENT: {
+            IFTParams ift_params;
+            ift_params.connectivity = params.connectivity;
+            ift_params.auto_seeds = true;
+
+            return ift_segment(image, ift_params);
+        }
+
+        case AlgorithmType::FUTURE_3:
+            throw std::runtime_error("NAO IMPLEMENTADO");
+    }
+
+    throw std::runtime_error("Algoritmo invalido");
+}
+ 
+
 int main() {
     print_banner();
+
 
     // --- 1. Selecionar imagem ---
     string input_path = select_image();
@@ -304,10 +364,12 @@ int main() {
 
     // --- 2. Configurar parametros ---
     CoustyParams params;
+    AlgorithmType algo      = select_algorithm();
     double lambda_choice    = select_lambda();
     params.connectivity     = select_connectivity();
     params.compute_saliency = select_saliency();
     string output_prefix    = select_output_prefix();
+    
 
     bool sweep_mode = (lambda_choice < 0.0);
 
@@ -386,7 +448,7 @@ int main() {
                               : "";
 
             cout << "\n[Lambda = " << lam << "]" << endl;
-            SegmentationResult res = run_single(image, params, seg_path, sal_path);
+            SegmentationResult res = run_single(algo, image, params, seg_path, sal_path);
 
             cout << left
                  << setw(10) << lam
@@ -409,7 +471,7 @@ int main() {
                           : "";
 
         cout << "\nExecutando segmentacao..." << endl;
-        run_single(image, params, seg_path, sal_path);
+        run_single(algo, image, params, seg_path, sal_path);
 
         cout << "\nConcluido com sucesso!" << endl;
         cout << "As imagens geradas foram salvas na pasta '" << out_dir << "'." << endl;

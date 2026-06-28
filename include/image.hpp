@@ -41,7 +41,8 @@ struct Image {
             c < 0 || c >= channels) {
             throw std::out_of_range("Image::at — indice fora dos limites");
         }
-        return pixels[static_cast<size_t>((y * width + x) * channels + c)];
+        const size_t index = static_cast<size_t>((y * width + x) * channels + c);
+        return pixels.at(index);
     }
 
     /**

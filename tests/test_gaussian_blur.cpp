@@ -43,9 +43,11 @@ static bool approx(float a, float b, float tol = EPS) {
 static Image make_gray_step(int w = 128, int h = 128)
 {
     Image img(w, h, 1);
-    for (int r = 0; r < h; ++r)
-        for (int c = 0; c < w; ++c)
-            img.at(r, c, 0) = (c < w / 2) ? 0.0f : 255.0f;
+
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x)
+            img.set(x, y, 0, (x < w/2) ? 0 : 255);
+
     return img;
 }
 
@@ -53,7 +55,7 @@ static Image make_gray_step(int w = 128, int h = 128)
 static Image make_gray_impulse(int w = 64, int h = 64)
 {
     Image img(w, h, 1);
-    img.at(h / 2, w / 2, 0) = 255.0f;
+    img.set(w/2, h/2, 0, 255);
     return img;
 }
 
@@ -63,34 +65,48 @@ static Image make_checkerboard(int w = 128, int h = 128, int cell = 8)
     Image img(w, h, 1);
     for (int r = 0; r < h; ++r)
         for (int c = 0; c < w; ++c)
-            img.at(r, c, 0) = (((r / cell) + (c / cell)) % 2 == 0) ? 255.0f : 0.0f;
+            img.set(c, r, 0,(((r / cell) + (c / cell)) % 2 == 0) ? 255 : 0);
     return img;
 }
 
 // Colorida: quatro quadrantes (vermelho, verde, azul, branco)
-static Image make_color_quads(int w = 128, int h = 128)
+static Image make_color_quads(int w=128,int h=128)
 {
-    Image img(w, h, 3);
-    for (int r = 0; r < h; ++r) {
-        for (int c = 0; c < w; ++c) {
-            bool top  = r < h / 2;
-            bool left = c < w / 2;
-            img.at(r, c, 0) = ( top &&  left) ? 255.0f :
-                               (!top && !left) ? 255.0f : 0.0f;   // R
-            img.at(r, c, 1) = ( top && !left) ? 255.0f :
-                               (!top && !left) ? 255.0f : 0.0f;   // G
-            img.at(r, c, 2) = (!top &&  left) ? 255.0f :
-                               (!top && !left) ? 255.0f : 0.0f;   // B
+    Image img(w,h,3);
+
+    for(int y=0;y<h;y++)
+    {
+        for(int x=0;x<w;x++)
+        {
+            bool top=y<h/2;
+            bool left=x<w/2;
+
+            img.set(x, y, 0,
+                    ( top && left) ? 255 :
+                    (!top && !left) ? 255 : 0);
+
+            img.set(x, y, 1,
+                    ( top && !left) ? 255 :
+                    (!top && !left) ? 255 : 0);
+
+            img.set(x, y, 2,
+                    (!top && left) ? 255 :
+                    (!top && !left) ? 255 : 0);
         }
     }
+
     return img;
 }
 
 // Constante 3x3: todos os pixels com valor 100
-static Image make_constant(float value = 100.0f)
+static Image make_constant(int value = 100)
 {
-    Image img(3, 3, 1);
-    for (float& v : img.data) v = value;
+    Image img(3,3,1);
+
+    for(int y=0;y<3;y++)
+        for(int x=0;x<3;x++)
+            img.set(x,y,0,value);
+
     return img;
 }
 
@@ -250,14 +266,16 @@ static void test_impulse_response() {
     assert(off1   >= off3);
 
     // Conservacao de energia: soma total deve ser ~255
-    float total = 0.0f;
-    for (float v : blurred.data) total += v;
+    double total = 0;
+    for(int y=0;y<blurred.height;y++)
+        for(int x=0;x<blurred.width;x++)
+            total += blurred.at(x,y,0);
     assert(approx(total, 255.0f, 2.0f));
 
     std::cout << "    -> centro=" << centre << "  1px=" << off1
               << "  3px=" << off3 << "  energia=" << total << std::endl;
 
-    save_ppm("test_impulse_sigma2.ppm", blurred);
+    save_image("test_impulse_sigma2.png", blurred);
     std::cout << "    -> salvo: test_impulse_sigma2.ppm" << std::endl;
 
     PASS(name);
@@ -275,12 +293,12 @@ static void test_step_edge_smoothing() {
     TEST(name);
 
     Image orig = make_gray_step();
-    save_ppm("test_gray_original.ppm", orig);
+    save_image("test_gray_original.png", orig);
 
     for (float sigma : {0.8f, 2.0f, 5.0f}) {
         Image blurred = GaussianBlur::apply(orig, sigma);
         std::string fname = "test_gray_sigma" + std::to_string(sigma).substr(0, 3) + ".ppm";
-        save_ppm(fname, blurred);
+        save_image(fname, blurred);
 
         float left_px  = blurred.at(64, 63, 0);
         float right_px = blurred.at(64, 64, 0);
@@ -306,7 +324,9 @@ static void test_border_no_halo() {
     TEST(name);
 
     Image white(64, 64, 1);
-    for (float& v : white.data) v = 255.0f;
+    for(int y=0;y<64;y++)
+        for(int x=0;x<64;x++)
+            white.set(x,y,0,255);
 
     Image blurred = GaussianBlur::apply(white, 3.0f);
 
@@ -323,7 +343,7 @@ static void test_border_no_halo() {
     std::cout << "    -> TL=" << tl << "  TR=" << tr
               << "  BL=" << bl << "  BR=" << br << std::endl;
 
-    save_ppm("test_edge_sigma3.ppm", blurred);
+    save_image("test_edge_sigma3.png", blurred);
     std::cout << "    -> salvo: test_edge_sigma3.ppm" << std::endl;
 
     PASS(name);
@@ -342,12 +362,12 @@ static void test_color_channel_independence() {
     TEST(name);
 
     Image orig = make_color_quads();
-    save_ppm("test_color_original.ppm", orig);
+    save_image("test_color_original.png", orig);
 
     for (float sigma : {1.5f, 4.0f}) {
         Image blurred = GaussianBlur::apply(orig, sigma);
         std::string fname = "test_color_sigma" + std::to_string(sigma).substr(0, 3) + ".ppm";
-        save_ppm(fname, blurred);
+        save_image(fname, blurred);
         std::cout << "    -> salvo: " << fname << std::endl;
     }
 
@@ -377,22 +397,23 @@ static void test_sigma_controls_smoothing() {
     TEST(name);
 
     Image board = make_checkerboard();
-    save_ppm("test_checker_original.ppm", board);
+    save_image("test_checker_original.png", board);
 
     Image b1 = GaussianBlur::apply(board, 0.8f);
     Image b2 = GaussianBlur::apply(board, 3.0f);
     Image b3 = GaussianBlur::apply(board, 8.0f);
-    save_ppm("test_checker_sigma0.8.ppm", b1);
-    save_ppm("test_checker_sigma3.0.ppm", b2);
-    save_ppm("test_checker_sigma8.0.ppm", b3);
+    save_image("test_checker_sigma0.8.png", b1);
+    save_image("test_checker_sigma3.0.png", b2);
+    save_image("test_checker_sigma8.0.png", b3);
 
     auto stddev = [](const Image& img) {
         float mean = 0.0f;
-        for (float v : img.data) mean += v;
-        mean /= static_cast<float>(img.data.size());
+        for (uint8_t v : img.pixels)
+            mean += v;
+        mean /= static_cast<float>(img.pixels.size());
         float var = 0.0f;
-        for (float v : img.data) var += (v - mean) * (v - mean);
-        return std::sqrt(var / static_cast<float>(img.data.size()));
+        for (float v : img.pixels) var += (v - mean) * (v - mean);
+        return std::sqrt(var / static_cast<float>(img.pixels.size()));
     };
 
     float sd0 = stddev(board);
