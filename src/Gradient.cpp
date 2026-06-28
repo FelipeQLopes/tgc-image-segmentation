@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <queue>
 #include <stdexcept>
+#include <iostream>
 
 // Helper: clamp para 0-255
 static uint8_t clamp255(int v) {
@@ -52,16 +53,16 @@ Image compute_gradient(const Image& image) {
     return grad;
 }
 
-std::vector<int> find_regional_minima(const Image& gradient) {
+std::vector<RegionalMinimum> extract_regional_minima(const Image& gradient) {
     if (gradient.channels != 1) {
         throw std::runtime_error("find_regional_minima: gradient deve ter 1 canal");
     }
 
     int w = gradient.width;
     int h = gradient.height;
-    int n = w * h;
-    std::vector<int> labels(n, -1);
-    std::vector<char> visited(n, 0);
+
+    std::vector<char> visited(w * h, 0);
+    std::vector<RegionalMinimum> minima;
 
     auto id = [&](int x, int y){ return y * w + x; };
 
@@ -69,13 +70,15 @@ std::vector<int> find_regional_minima(const Image& gradient) {
 
     for (int y = 0; y < h; ++y) {
         for (int x = 0; x < w; ++x) {
-            int idx = id(x,y);
+
+            int idx = id(x, y);
             if (visited[idx]) continue;
 
-            //completa componente de pixels com o mesmo valor de gradiente
             int val = gradient.at(x, y, 0);
+
             std::queue<int> q;
             std::vector<int> comp;
+
             visited[idx] = 1;
             q.push(idx);
             comp.push_back(idx);
@@ -83,42 +86,58 @@ std::vector<int> find_regional_minima(const Image& gradient) {
             bool is_min = true;
 
             while (!q.empty()) {
-                int cur = q.front(); q.pop();
+
+                int cur = q.front();
+                q.pop();
+
                 int cx = cur % w;
                 int cy = cur / w;
 
                 for (int dy = -1; dy <= 1; ++dy) {
                     for (int dx = -1; dx <= 1; ++dx) {
-                        if (dx == 0 && dy == 0) continue;
+
+                        if (dx == 0 && dy == 0)
+                            continue;
+
                         int nx = cx + dx;
                         int ny = cy + dy;
-                        if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+
+                        if (nx < 0 || nx >= w || ny < 0 || ny >= h)
+                            continue;
+
                         int nidx = id(nx, ny);
                         int nval = gradient.at(nx, ny, 0);
+
                         if (nval == val) {
+
                             if (!visited[nidx]) {
                                 visited[nidx] = 1;
                                 q.push(nidx);
                                 comp.push_back(nidx);
                             }
+
                         } else {
-                            //vizinho externo deve ser estritamente maior
-                            if (nval <= val) {
+
+                            if (nval <= val)
                                 is_min = false;
-                            }
                         }
                     }
                 }
             }
 
             if (is_min) {
-                for (int p : comp) labels[p] = current_label;
-                ++current_label;
-            } else {
-                //deixa labels como -1 para pixels que nao sao minimos regionais
+
+                RegionalMinimum rm;
+                rm.label = current_label;
+                rm.level = val;
+                rm.pixels = std::move(comp);
+
+                minima.push_back(std::move(rm));
+
+                current_label++;
             }
         }
     }
 
-    return labels;
+    return minima;
 }
