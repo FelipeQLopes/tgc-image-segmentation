@@ -288,11 +288,16 @@ static SegmentationResult run_single(
     }
 
     if (params.compute_saliency && !sal_path.empty()) {
-        try {
-            save_image(sal_path, result.saliency_image);
-            cout << "  Saliency map salvo em: " << sal_path << endl;
-        } catch (const exception& e) {
-            cerr << "  Erro ao salvar saliency map: " << e.what() << endl;
+        if (result.saliency_image.width > 0 && result.saliency_image.height > 0 &&
+            result.saliency_image.channels > 0) {
+            try {
+                save_image(sal_path, result.saliency_image);
+                cout << "  Saliency map salvo em: " << sal_path << endl;
+            } catch (const exception& e) {
+                cerr << "  Erro ao salvar saliency map: " << e.what() << endl;
+            }
+        } else {
+            cout << "  Saliency map nao disponivel para este algoritmo." << endl;
         }
     }
 
